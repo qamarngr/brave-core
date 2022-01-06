@@ -536,8 +536,7 @@ void JSSolanaProvider::OnConnect(
   }
 
   SendResponse(std::move(global_context), std::move(promise_resolver), isolate,
-               result,
-               error == mojom::SolanaProviderError::kSuccess);
+               result, error == mojom::SolanaProviderError::kSuccess);
   if (error == mojom::SolanaProviderError::kSuccess) {
     v8::Local<v8::Value> v8_public_key;
     CHECK(
@@ -571,8 +570,7 @@ void JSSolanaProvider::OnSignAndSendTransaction(
   }
 
   SendResponse(std::move(global_context), std::move(promise_resolver), isolate,
-               v8_result,
-               error == mojom::SolanaProviderError::kSuccess);
+               v8_result, error == mojom::SolanaProviderError::kSuccess);
 }
 
 void JSSolanaProvider::OnSignMessage(
@@ -619,8 +617,7 @@ void JSSolanaProvider::OnSignMessage(
   }
 
   SendResponse(std::move(global_context), std::move(promise_resolver), isolate,
-               v8_result,
-               error == mojom::SolanaProviderError::kSuccess);
+               v8_result, error == mojom::SolanaProviderError::kSuccess);
 }
 
 void JSSolanaProvider::OnSignTransaction(
@@ -644,8 +641,7 @@ void JSSolanaProvider::OnSignTransaction(
   }
 
   SendResponse(std::move(global_context), std::move(promise_resolver), isolate,
-               result,
-               error == mojom::SolanaProviderError::kSuccess);
+               result, error == mojom::SolanaProviderError::kSuccess);
 }
 
 void JSSolanaProvider::OnSignAllTransactions(
@@ -680,8 +676,7 @@ void JSSolanaProvider::OnSignAllTransactions(
   }
 
   SendResponse(std::move(global_context), std::move(promise_resolver), isolate,
-               result,
-               error == mojom::SolanaProviderError::kSuccess);
+               result, error == mojom::SolanaProviderError::kSuccess);
 }
 
 void JSSolanaProvider::OnRequest(
@@ -717,8 +712,7 @@ void JSSolanaProvider::OnRequest(
   }
 
   SendResponse(std::move(global_context), std::move(promise_resolver), isolate,
-               v8_result,
-               error == mojom::SolanaProviderError::kSuccess);
+               v8_result, error == mojom::SolanaProviderError::kSuccess);
 }
 
 void JSSolanaProvider::SendResponse(
