@@ -101,3 +101,13 @@ export type SetTransactionProviderErrorType = {
   transaction: BraveWallet.TransactionInfo
   providerError: TransactionProviderError
 }
+
+export type GetCoinMarketPayload = {
+  vsAsset: string
+  limit: number
+}
+
+export type GetCoinMarketsResponse = {
+  success: boolean
+  values: BraveWallet.CoinMarket[]
+}

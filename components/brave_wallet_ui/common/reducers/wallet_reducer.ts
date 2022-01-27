@@ -22,6 +22,8 @@ import {
   SolFeeEstimates
 } from '../../constants/types'
 import {
+  ActiveOriginChanged,
+  GetCoinMarketsResponse,
   IsEip1559Changed,
   NewUnapprovedTxAdded,
   SetTransactionProviderErrorType,
@@ -91,6 +93,9 @@ const defaultState: WalletState = {
     crypto: ''
   },
   transactionProviderErrorRegistry: {},
+  defaultNetworks: [] as BraveWallet.NetworkInfo[],
+  isLoadingCoinMarketData: true,
+  coinMarketData: [],
   defaultNetworks: [] as BraveWallet.NetworkInfo[],
   selectedNetworkFilter: AllNetworksOption,
   solFeeEstimates: undefined
@@ -496,6 +501,14 @@ export const createWalletReducer = (initialState: WalletState) => {
     return {
       ...state,
       defaultNetworks: payload
+    }
+  })
+
+  reducer.on(WalletActions.setCoinMarkets, (state: WalletState, payload: GetCoinMarketsResponse) => {
+    return {
+      ...state,
+      coinMarketData: payload.success ? payload.values : [],
+      isLoadingCoinMarketData: false
     }
   })
 
