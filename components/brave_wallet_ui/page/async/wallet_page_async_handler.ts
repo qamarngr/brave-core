@@ -216,6 +216,7 @@ handler.on(WalletPageActions.importFromMetaMask.getType(), async (store: Store, 
 
 handler.on(WalletActions.newUnapprovedTxAdded.getType(), async (store: Store, payload: NewUnapprovedTxAdded) => {
   const pageHandler = getWalletPageApiProxy().pageHandler
+  console.log(payload)
   pageHandler.showApprovePanelUI()
 })
 

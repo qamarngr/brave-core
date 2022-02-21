@@ -61,13 +61,12 @@ bool EthTxManager::ValidateTxData(const mojom::TxDataPtr& tx_data,
   }
   if (!tx_data->value.empty() && !IsValidHexString(tx_data->value)) {
     *error =
-        l10n_util::GetStringUTF8(IDS_WALLET_ETH_SEND_TRANSACTION_VALUE_INVALID);
+        l10n_util::GetStringUTF8(IDS_WALLET_SEND_TRANSACTION_VALUE_INVALID);
     return false;
   }
   // to must be a valid address if specified
   if (!tx_data->to.empty() && EthAddress::FromHex(tx_data->to).IsEmpty()) {
-    *error =
-        l10n_util::GetStringUTF8(IDS_WALLET_ETH_SEND_TRANSACTION_TO_INVALID);
+    *error = l10n_util::GetStringUTF8(IDS_WALLET_SEND_TRANSACTION_TO_INVALID);
     return false;
   }
   return true;
@@ -154,7 +153,7 @@ void EthTxManager::AddUnapprovedTransaction(
   if (from.empty()) {
     std::move(callback).Run(
         false, "",
-        l10n_util::GetStringUTF8(IDS_WALLET_ETH_SEND_TRANSACTION_FROM_EMPTY));
+        l10n_util::GetStringUTF8(IDS_WALLET_SEND_TRANSACTION_FROM_EMPTY));
     return;
   }
   std::string error;
@@ -278,7 +277,7 @@ void EthTxManager::AddUnapproved1559Transaction(
   if (from.empty()) {
     std::move(callback).Run(
         false, "",
-        l10n_util::GetStringUTF8(IDS_WALLET_ETH_SEND_TRANSACTION_FROM_EMPTY));
+        l10n_util::GetStringUTF8(IDS_WALLET_SEND_TRANSACTION_FROM_EMPTY));
     return;
   }
   std::string error;
@@ -472,7 +471,7 @@ void EthTxManager::ApproveTransaction(const std::string& tx_meta_id,
     LOG(ERROR) << "Could not convert chain ID";
     std::move(callback).Run(
         false, mojom::ProviderError::kInternalError,
-        l10n_util::GetStringUTF8(IDS_WALLET_ETH_INVALID_CHAIN_ID_RPC));
+        l10n_util::GetStringUTF8(IDS_WALLET_INVALID_CHAIN_ID_RPC));
     return;
   }
 
@@ -499,7 +498,7 @@ void EthTxManager::OnGetNextNonce(std::unique_ptr<EthTxMeta> meta,
     LOG(ERROR) << "GetNextNonce failed";
     std::move(callback).Run(
         false, mojom::ProviderError::kInternalError,
-        l10n_util::GetStringUTF8(IDS_WALLET_ETH_GET_NONCE_ERROR));
+        l10n_util::GetStringUTF8(IDS_WALLET_GET_NONCE_ERROR));
     return;
   }
   meta->tx()->set_nonce(nonce);
@@ -512,7 +511,7 @@ void EthTxManager::OnGetNextNonce(std::unique_ptr<EthTxMeta> meta,
     LOG(ERROR) << "Transaction must be signed first";
     std::move(callback).Run(
         false, mojom::ProviderError::kInternalError,
-        l10n_util::GetStringUTF8(IDS_WALLET_ETH_SIGN_TRANSACTION_ERROR));
+        l10n_util::GetStringUTF8(IDS_WALLET_SIGN_TRANSACTION_ERROR));
     return;
   }
   PublishTransaction(meta->id(), meta->tx()->GetSignedTransaction(),

@@ -71,6 +71,7 @@ export default class WalletApiProxy {
   addTxServiceObserver (store: Store) {
     const txServiceManagerObserverReceiver = new BraveWallet.TxServiceObserverReceiver({
       onNewUnapprovedTx: function (txInfo) {
+        console.log(txInfo)
         store.dispatch(WalletActions.newUnapprovedTxAdded({ txInfo }))
       },
       onUnapprovedTxUpdated: function (txInfo) {

@@ -8,6 +8,7 @@
 #include "base/base64.h"
 #include "base/strings/string_number_conversions.h"
 #include "brave/components/bls/buildflags.h"
+#include "brave/components/brave_wallet/browser/fil_transaction.h"
 #include "brave/components/brave_wallet/browser/keyring_service.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #if BUILDFLAG(ENABLE_RUST_BLS)
@@ -51,7 +52,6 @@ TEST(FilecoinKeyring, DecodeImportPayload) {
       "22",
       &private_key, &protocol));
   EXPECT_TRUE(private_key.empty());
-
   // no type in json
   ASSERT_FALSE(FilecoinKeyring::DecodeImportPayload(
       "7b22507269766174654b6579223a2270536e7752332f3855616b53516f777858742b345a"
@@ -172,5 +172,27 @@ TEST(FilecoinKeyring, fil_private_key_public_key) {
                           [](int i) { return i == 0; }));
 }
 #endif
+
+TEST(FilecoinKeyring, SignTransaction) {
+  // Specific signature check is in eth_transaction_unittest.cc
+  FilecoinKeyring keyring;
+  FilTransaction tx = *FilTransaction::FromTxData(mojom::FilTxData::New(
+      "1", "100393", "101447", "2187060",
+      "t1tquwkjo6qvweah2g2yikewr7y5dyjds42pnrn3a", "1000000000000000000",
+      "bafy2bzaceavs6bfosgcqpnlpbgcocq4hbjh7jrxufcvuaxspkolev43tqlg6m"));
+  keyring.SignTransaction("t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq", &tx);
+  EXPECT_FALSE(tx.IsSigned());
+
+  std::vector<uint8_t> seed;
+  EXPECT_TRUE(base::HexStringToBytes(
+      "13ca6c28d26812f82db27908de0b0b7b18940cc4e9d96ebd7de190f706741489907ef65b"
+      "8f9e36c31dc46e81472b6a5e40a4487e725ace445b8203f243fb8958",
+      &seed));
+  keyring.ConstructRootHDKey(seed, KeyringService::GetAccountPathByIndex(
+                                       0, mojom::kFilecoinKeyringId));
+  keyring.AddAccounts(1);
+  keyring.SignTransaction(keyring.GetAddress(0), &tx);
+  EXPECT_TRUE(tx.IsSigned());
+}
 
 }  // namespace brave_wallet

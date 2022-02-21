@@ -1,17 +1,17 @@
-/* Copyright (c) 2021 The Brave Authors. All rights reserved.
+/* Copyright (c) 2022 The Brave Authors. All rights reserved.
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "brave/components/brave_wallet/browser/eth_pending_tx_tracker.h"
+#include "brave/components/brave_wallet/browser/fil_pending_tx_tracker.h"
 
 #include <memory>
 #include <utility>
 
 #include "base/logging.h"
 #include "base/synchronization/lock.h"
-#include "brave/components/brave_wallet/browser/eth_nonce_tracker.h"
-#include "brave/components/brave_wallet/browser/eth_tx_meta.h"
+#include "brave/components/brave_wallet/browser/fil_nonce_tracker.h"
+#include "brave/components/brave_wallet/browser/fil_tx_meta.h"
 #include "brave/components/brave_wallet/browser/json_rpc_service.h"
 #include "brave/components/brave_wallet/browser/tx_meta.h"
 #include "brave/components/brave_wallet/common/brave_wallet.mojom.h"
@@ -19,16 +19,16 @@
 
 namespace brave_wallet {
 
-EthPendingTxTracker::EthPendingTxTracker(EthTxStateManager* tx_state_manager,
+FilPendingTxTracker::FilPendingTxTracker(FilTxStateManager* tx_state_manager,
                                          JsonRpcService* json_rpc_service,
-                                         EthNonceTracker* nonce_tracker)
+                                         FilNonceTracker* nonce_tracker)
     : tx_state_manager_(tx_state_manager),
       json_rpc_service_(json_rpc_service),
       nonce_tracker_(nonce_tracker),
       weak_factory_(this) {}
-EthPendingTxTracker::~EthPendingTxTracker() = default;
+FilPendingTxTracker::~FilPendingTxTracker() = default;
 
-bool EthPendingTxTracker::UpdatePendingTransactions(size_t* num_pending) {
+bool FilPendingTxTracker::UpdatePendingTransactions(size_t* num_pending) {
   base::Lock* nonce_lock = nonce_tracker_->GetLock();
   if (!nonce_lock->Try())
     return false;
@@ -36,14 +36,14 @@ bool EthPendingTxTracker::UpdatePendingTransactions(size_t* num_pending) {
   auto pending_transactions = tx_state_manager_->GetTransactionsByStatus(
       mojom::TransactionStatus::Submitted, absl::nullopt);
   for (const auto& pending_transaction : pending_transactions) {
-    if (IsNonceTaken(static_cast<const EthTxMeta&>(*pending_transaction))) {
+    if (IsNonceTaken(static_cast<const FilTxMeta&>(*pending_transaction))) {
       DropTransaction(pending_transaction.get());
       continue;
     }
     std::string id = pending_transaction->id();
     json_rpc_service_->GetTransactionReceipt(
         pending_transaction->tx_hash(),
-        base::BindOnce(&EthPendingTxTracker::OnGetTxReceipt,
+        base::BindOnce(&FilPendingTxTracker::OnGetTxReceipt,
                        weak_factory_.GetWeakPtr(), std::move(id)));
   }
 
@@ -52,29 +52,28 @@ bool EthPendingTxTracker::UpdatePendingTransactions(size_t* num_pending) {
   return true;
 }
 
-void EthPendingTxTracker::ResubmitPendingTransactions() {
-  // TODO(darkdh): limit the rate of tx publishing
+void FilPendingTxTracker::ResubmitPendingTransactions() {
   auto pending_transactions = tx_state_manager_->GetTransactionsByStatus(
       mojom::TransactionStatus::Submitted, absl::nullopt);
   for (const auto& pending_transaction : pending_transactions) {
-    auto* pending_eth_transaction =
-        static_cast<EthTxMeta*>(pending_transaction.get());
-    if (!pending_eth_transaction->tx()->IsSigned()) {
+    auto* pending_fil_transaction =
+        static_cast<FilTxMeta*>(pending_transaction.get());
+    if (!pending_fil_transaction->tx()->IsSigned()) {
       continue;
     }
     json_rpc_service_->SendRawTransaction(
-        pending_eth_transaction->tx()->GetSignedTransaction(),
-        base::BindOnce(&EthPendingTxTracker::OnSendRawTransaction,
+        pending_fil_transaction->tx()->GetSignedTransaction(),
+        base::BindOnce(&FilPendingTxTracker::OnSendRawTransaction,
                        weak_factory_.GetWeakPtr()));
   }
 }
 
-void EthPendingTxTracker::Reset() {
+void FilPendingTxTracker::Reset() {
   network_nonce_map_.clear();
   dropped_blocks_counter_.clear();
 }
 
-void EthPendingTxTracker::OnGetTxReceipt(std::string id,
+void FilPendingTxTracker::OnGetTxReceipt(std::string id,
                                          TransactionReceipt receipt,
                                          mojom::ProviderError error,
                                          const std::string& error_message) {
@@ -84,13 +83,12 @@ void EthPendingTxTracker::OnGetTxReceipt(std::string id,
   if (!nonce_lock->Try())
     return;
 
-  std::unique_ptr<EthTxMeta> meta = tx_state_manager_->GetEthTx(id);
+  std::unique_ptr<FilTxMeta> meta = tx_state_manager_->GetFilTx(id);
   if (!meta) {
     nonce_lock->Release();
     return;
   }
   if (receipt.status) {
-    meta->set_tx_receipt(receipt);
     meta->set_status(mojom::TransactionStatus::Confirmed);
     meta->set_confirmed_time(base::Time::Now());
     tx_state_manager_->AddOrUpdateTx(*meta);
@@ -101,7 +99,7 @@ void EthPendingTxTracker::OnGetTxReceipt(std::string id,
   nonce_lock->Release();
 }
 
-void EthPendingTxTracker::OnGetNetworkNonce(std::string address,
+void FilPendingTxTracker::OnGetNetworkNonce(std::string address,
                                             uint256_t result,
                                             mojom::ProviderError error,
                                             const std::string& error_message) {
@@ -111,30 +109,30 @@ void EthPendingTxTracker::OnGetNetworkNonce(std::string address,
   network_nonce_map_[address] = result;
 }
 
-void EthPendingTxTracker::OnSendRawTransaction(
+void FilPendingTxTracker::OnSendRawTransaction(
     const std::string& tx_hash,
     mojom::ProviderError error,
     const std::string& error_message) {}
 
-bool EthPendingTxTracker::IsNonceTaken(const EthTxMeta& meta) {
+bool FilPendingTxTracker::IsNonceTaken(const FilTxMeta& meta) {
   auto confirmed_transactions = tx_state_manager_->GetTransactionsByStatus(
       mojom::TransactionStatus::Confirmed, absl::nullopt);
   for (const auto& confirmed_transaction : confirmed_transactions) {
-    auto* eth_confirmed_transaction =
-        static_cast<EthTxMeta*>(confirmed_transaction.get());
-    if (eth_confirmed_transaction->tx()->nonce() == meta.tx()->nonce() &&
-        eth_confirmed_transaction->id() != meta.id())
+    auto* fil_confirmed_transaction =
+        static_cast<FilTxMeta*>(confirmed_transaction.get());
+    if (fil_confirmed_transaction->tx()->nonce() == meta.tx()->nonce() &&
+        fil_confirmed_transaction->id() != meta.id())
       return true;
   }
   return false;
 }
 
-bool EthPendingTxTracker::ShouldTxDropped(const EthTxMeta& meta) {
+bool FilPendingTxTracker::ShouldTxDropped(const FilTxMeta& meta) {
   const std::string hex_address = meta.from();
   if (network_nonce_map_.find(hex_address) == network_nonce_map_.end()) {
     json_rpc_service_->GetTransactionCount(
         hex_address, mojom::CoinType::ETH,
-        base::BindOnce(&EthPendingTxTracker::OnGetNetworkNonce,
+        base::BindOnce(&FilPendingTxTracker::OnGetNetworkNonce,
                        weak_factory_.GetWeakPtr(), std::move(hex_address)));
   } else {
     uint256_t network_nonce = network_nonce_map_[hex_address];
@@ -157,7 +155,7 @@ bool EthPendingTxTracker::ShouldTxDropped(const EthTxMeta& meta) {
   return false;
 }
 
-void EthPendingTxTracker::DropTransaction(TxMeta* meta) {
+void FilPendingTxTracker::DropTransaction(TxMeta* meta) {
   if (!meta)
     return;
   tx_state_manager_->DeleteTx(meta->id());

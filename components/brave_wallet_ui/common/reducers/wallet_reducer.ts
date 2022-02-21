@@ -284,7 +284,7 @@ reducer.on(WalletActions.newUnapprovedTxAdded, (state: WalletState, payload: New
       payload.txInfo
     ]
   }
-
+  console.log(newState)
   if (state.pendingTransactions.length === 0) {
     newState.selectedPendingTransaction = payload.txInfo
   }
@@ -417,6 +417,7 @@ reducer.on(WalletActions.queueNextTransaction, (state: any) => {
   if (pendingTransactions.length === index) {
     newPendingTransaction = pendingTransactions[0]
   }
+  console.log(pendingTransactions)
   return {
     ...state,
     selectedPendingTransaction: newPendingTransaction

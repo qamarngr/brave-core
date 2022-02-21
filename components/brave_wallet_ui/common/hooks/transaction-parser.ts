@@ -79,11 +79,11 @@ export function useTransactionFeesParser (selectedNetwork: BraveWallet.NetworkIn
    * @returns Localized string describing the error, or undefined in case of
    * no error.
    */
-  const checkForMissingGasLimitError = React.useCallback((gasLimit: string): string | undefined => {
+/*  const checkForMissingGasLimitError = React.useCallback((gasLimit: string): string | undefined => {
     return (gasLimit === '' || Amount.normalize(gasLimit) === '0')
       ? getLocale('braveWalletMissingGasLimitError')
       : undefined
-  }, [])
+  }, [])*/
 
   return React.useCallback((transactionInfo: BraveWallet.TransactionInfo): ParsedTransactionFees => {
     const { txDataUnion: { ethTxData1559: txData } } = transactionInfo
@@ -110,8 +110,7 @@ export function useTransactionFeesParser (selectedNetwork: BraveWallet.NetworkIn
         .divideByDecimals(selectedNetwork.decimals)
         .times(networkSpotPrice)
         .formatAsFiat(),
-      isEIP1559Transaction,
-      missingGasLimitError: checkForMissingGasLimitError(gasLimit)
+      isEIP1559Transaction
     }
   }, [selectedNetwork, networkSpotPrice])
 }

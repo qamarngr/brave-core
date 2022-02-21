@@ -33,6 +33,7 @@ class OneShotTimer;
 
 namespace brave_wallet {
 
+class FilTransaction;
 class EthTransaction;
 class KeyringServiceUnitTest;
 class BraveWalletProviderImplUnitTest;
@@ -175,6 +176,8 @@ class KeyringService : public KeyedService, public mojom::KeyringService {
   void Reset(bool notify_observer = true);
   bool IsKeyringCreated(const std::string& keyring_id) const;
   bool IsHardwareAccount(const std::string& account) const;
+  void SignTransactionByFilecoinKeyring(const std::string& address,
+                                        FilTransaction* tx);
   void SignTransactionByDefaultKeyring(const std::string& address,
                                        EthTransaction* tx,
                                        uint256_t chain_id);
@@ -257,6 +260,7 @@ class KeyringService : public KeyedService, public mojom::KeyringService {
 
   friend class BraveWalletProviderImplUnitTest;
   friend class EthTxManagerUnitTest;
+  friend class FilTxManagerUnitTest;
 
   void AddAccountForKeyring(const std::string& keyring_id,
                             const std::string& account_name);

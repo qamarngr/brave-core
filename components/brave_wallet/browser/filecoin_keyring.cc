@@ -11,8 +11,10 @@
 #include "base/json/json_reader.h"
 #include "base/strings/string_number_conversions.h"
 #include "brave/components/bls/buildflags.h"
+#include "brave/components/brave_wallet/browser/fil_transaction.h"
 #include "brave/components/brave_wallet/common/brave_wallet.mojom.h"
 #include "brave/components/brave_wallet/common/fil_address.h"
+#include "brave/components/brave_wallet/common/hex_utils.h"
 #if BUILDFLAG(ENABLE_RUST_BLS)
 #include "brave/components/bls/rs/src/lib.rs.h"
 #endif
@@ -90,6 +92,20 @@ bool FilecoinKeyring::DecodeImportPayload(
                                    private_key_decoded.end());
   *private_key_out = private_key;
   return true;
+}
+
+void FilecoinKeyring::SignTransaction(const std::string& address,
+                                      FilTransaction* tx) {
+  HDKeyBase* hd_key = GetHDKeyFromAddress(address);
+  if (!hd_key || !tx)
+    return;
+
+  const std::string message_raw = tx->GetMessageToSign();
+  int recid;
+  std::vector<uint8_t> message(message_raw.begin(), message_raw.end());
+  const std::vector<uint8_t> signature = hd_key->Sign(message, &recid);
+  DLOG(INFO) << ToHex(signature);
+  // tx->ProcessSignature(signature, recid, chain_id);
 }
 
 std::string FilecoinKeyring::ImportFilecoinAccount(
