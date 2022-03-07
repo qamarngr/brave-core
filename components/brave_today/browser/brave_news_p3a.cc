@@ -7,7 +7,6 @@
 
 #include <algorithm>
 
-#include "base/cxx17_backports.h"
 #include "base/metrics/histogram_functions.h"
 #include "base/metrics/histogram_macros.h"
 #include "brave/components/brave_today/common/pref_names.h"
@@ -42,8 +41,7 @@ void RecordToHistogramBucket(const char* histogram_name,
                              uint64_t value) {
   const int* it_count = std::lower_bound(buckets, std::end(buckets), value);
   int answer = it_count - buckets;
-  base::UmaHistogramExactLinear(histogram_name, answer,
-                                base::size(buckets) + 1);
+  base::UmaHistogramExactLinear(histogram_name, answer, std::size(buckets) + 1);
 }
 
 }  // namespace
