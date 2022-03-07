@@ -14,6 +14,22 @@
 #include "content/public/browser/browser_context.h"
 #include "net/base/net_errors.h"
 
+namespace {
+// For DNSLink we are making urls like
+// <gateway>/ipns/<dnslink-domain>/<dnslink-path>
+// or ipfs://cid/path for http://cid.gateway/path
+std::string GetPathForDNSLink(GURL url) {
+  if (ipfs::IsIPFSScheme(url)) {
+    std::string path = url.path();
+    if (base::StartsWith(path, "//"))
+      return path.substr(1, path.size());
+    return path;
+  }
+  return "/ipns/" + url.host() + url.path();
+}
+
+}  // namespace
+
 namespace ipfs {
 
 int OnBeforeURLRequest_IPFSRedirectWork(
@@ -63,14 +79,16 @@ int OnHeadersReceived_IPFSRedirectWork(
 
   std::string ipfs_path;
   bool api_gateway = IsAPIGateway(ctx->request_url, chrome::GetChannel());
-  if (ctx->ipfs_auto_fallback && !api_gateway && response_headers &&
-      response_headers->GetNormalizedHeader("x-ipfs-path", &ipfs_path) &&
+  bool has_ipfs_header =
+      response_headers &&
+      response_headers->GetNormalizedHeader("x-ipfs-path", &ipfs_path);
+  if (ctx->ipfs_auto_fallback && !api_gateway && has_ipfs_header &&
       // Make sure we don't infinite redirect
       !ctx->request_url.DomainIs(ctx->ipfs_gateway_url.host()) &&
       // Do not redirect if the frame is not ipfs/ipns
-      IsIPFSScheme(ctx->initiator_url)) {
+      (ctx->initiator_url.is_empty() || IsIPFSScheme(ctx->initiator_url))) {
     GURL::Replacements replacements;
-    replacements.SetPathStr(ipfs_path);
+    replacements.SetPathStr(GetPathForDNSLink(ctx->request_url).c_str());
 
     if (ctx->request_url.has_query()) {
       replacements.SetQueryStr(ctx->request_url.query_piece());

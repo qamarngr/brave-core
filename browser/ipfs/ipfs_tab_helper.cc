@@ -139,6 +139,7 @@ GURL IPFSTabHelper::GetIPFSResolvedURL() const {
   GURL::Replacements replacements;
   replacements.SetQueryStr(current.query_piece());
   replacements.SetRefStr(current.ref_piece());
+  DLOG(INFO) << "ipfs_resolved_url_:" << ipfs_resolved_url_;
   return ipfs_resolved_url_.ReplaceComponents(replacements);
 }
 
@@ -189,8 +190,6 @@ bool IPFSTabHelper::CanResolveURL(const GURL& url) const {
                  !IsAPIGateway(url_origin.GetURL(), chrome::GetChannel());
   if (!IsLocalGatewayConfigured(pref_service_)) {
     resolve = resolve && !IsDefaultGatewayURL(url, pref_service_);
-  } else {
-    resolve = resolve && !IsLocalGatewayURL(url);
   }
   return resolve;
 }
@@ -209,6 +208,18 @@ std::string IPFSTabHelper::GetPathForDNSLink(GURL url) {
 GURL IPFSTabHelper::ResolveDNSLinkURL(GURL url) {
   if (!url.is_valid())
     return url;
+  if (IsLocalGatewayURL(url)) {
+    std::string cid, path;
+    if (ipfs::ParseCIDAndPathFromIPFSUrl(url, &cid, &path)) {
+      DLOG(INFO) << "cid:" << cid;
+      return GURL("ipfs://" + cid + "/" + path);
+    } else {
+      auto current_url = GetCurrentPageURL();
+      DLOG(INFO) << "resolved url:" << url;
+      DLOG(INFO) << "current_url:" << current_url;
+    }
+    return url;
+  }
   GURL gateway =
       ipfs::GetConfiguredBaseGateway(pref_service_, chrome::GetChannel());
   GURL::Replacements replacements;
