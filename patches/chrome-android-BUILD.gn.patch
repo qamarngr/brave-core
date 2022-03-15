@@ -58,3 +58,11 @@ index 4c9affbf42d33c6c3593be43c103844ea22584b0..c9f8c637c62fb2539a15526d5c6501a5
  
    # More deps for DFMs.
    if (dfmify_dev_ui) {
+@@ -2743,6 +2752,7 @@ template("monochrome_public_apk_or_module_tmpl") {
+         deps += [ "//weblayer/browser/java:upstream_java" ]
+       }
+     }
++    deps += ["//brave/third_party/android_deps:com_wireguard_android_J__unpack_aar"]if (!_is_bundle) {loadable_modules = [ "$_lib_dir/armeabi-v7a/libwg-go.so"]secondary_abi_loadable_modules = [ "$_lib_dir/arm64-v8a/libwg-go.so"]} else {loadable_modules = [ "$_lib_dir/arm64-v8a/libwg-go.so"]secondary_abi_loadable_modules = [ "$_lib_dir/armeabi-v7a/libwg-go.so"]}
+   }
+ }
+ 
