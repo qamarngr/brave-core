@@ -270,6 +270,8 @@ class JsonRpcServiceUnitTest : public testing::Test {
     json_rpc_service_.reset(
         new JsonRpcService(shared_url_loader_factory_, &prefs_));
     SetNetwork(mojom::kLocalhostChainId, mojom::CoinType::ETH);
+    SetNetwork(mojom::kLocalhostChainId, mojom::CoinType::SOL);
+    SetNetwork(mojom::kLocalhostChainId, mojom::CoinType::FIL);
   }
 
   ~JsonRpcServiceUnitTest() override = default;
@@ -279,6 +281,10 @@ class JsonRpcServiceUnitTest : public testing::Test {
   }
 
   PrefService* prefs() { return &prefs_; }
+
+  GURL GetNetwork(const std::string& chain_id, mojom::CoinType coin) {
+    return brave_wallet::GetNetworkURL(prefs(), chain_id, coin);
+  }
 
   bool GetIsEip1559FromPrefs(const std::string& chain_id) {
     if (chain_id == mojom::kLocalhostChainId)
@@ -386,12 +392,14 @@ class JsonRpcServiceUnitTest : public testing::Test {
         }));
   }
 
-  void SetInterceptor(const std::string& expected_method,
+  void SetInterceptor(const GURL& expected_url,
+                      const std::string& expected_method,
                       const std::string& expected_cache_header,
                       const std::string& content) {
     url_loader_factory_.SetInterceptor(base::BindLambdaForTesting(
-        [&, expected_method, expected_cache_header,
+        [&, expected_url, expected_method, expected_cache_header,
          content](const network::ResourceRequest& request) {
+          EXPECT_EQ(request.url, expected_url);
           std::string header_value(100, '\0');
           EXPECT_TRUE(request.headers.GetHeader("x-brave-key", &header_value));
           EXPECT_EQ(BRAVE_SERVICES_KEY, header_value);
@@ -460,14 +468,14 @@ class JsonRpcServiceUnitTest : public testing::Test {
         }));
   }
 
-  void SetIsEip1559Interceptor(bool is_eip1559) {
+  void SetIsEip1559Interceptor(const GURL& expected_network, bool is_eip1559) {
     if (is_eip1559)
       SetInterceptor(
-          "eth_getBlockByNumber", "latest,false",
+          expected_network, "eth_getBlockByNumber", "latest,false",
           "{\"jsonrpc\":\"2.0\",\"id\": \"0\",\"result\": "
           "{\"baseFeePerGas\":\"0x181f22e7a9\", \"gasLimit\":\"0x6691b8\"}}");
     else
-      SetInterceptor("eth_getBlockByNumber", "latest,false",
+      SetInterceptor(expected_network, "eth_getBlockByNumber", "latest,false",
                      "{\"jsonrpc\":\"2.0\",\"id\": \"0\",\"result\": "
                      "{\"gasLimit\":\"0x6691b8\"}}");
   }
@@ -678,6 +686,7 @@ TEST_F(JsonRpcServiceUnitTest, SetNetwork) {
   base::RunLoop().RunUntilIdle();
 
   // Solana
+  EXPECT_TRUE(SetNetwork(mojom::kSolanaMainnet, mojom::CoinType::SOL));
   ASSERT_EQ(mojom::kSolanaMainnet,
             GetCurrentChainId(prefs(), mojom::CoinType::SOL));
   EXPECT_FALSE(SetNetwork("0x1234", mojom::CoinType::SOL));
@@ -1230,7 +1239,8 @@ TEST_F(JsonRpcServiceUnitTest, Request) {
   std::string result = "\"0xb539d5\"";
   std::string expected_response =
       "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":" + result + "}";
-  SetInterceptor("eth_blockNumber", "true", expected_response);
+  SetInterceptor(GetNetwork(mojom::kLocalhostChainId, mojom::CoinType::ETH),
+                 "eth_blockNumber", "true", expected_response);
   json_rpc_service_->Request(
       request, true, base::Value(), mojom::CoinType::ETH,
       base::BindOnce(&OnRequestResponse, &callback_called, true /* success */,
@@ -1246,7 +1256,8 @@ TEST_F(JsonRpcServiceUnitTest, Request) {
   result = "\"0xb539d5\"";
   expected_response =
       "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":" + result + "}";
-  SetInterceptor("eth_getBlockByNumber", "0x5BAD55,true", expected_response);
+  SetInterceptor(GetNetwork(mojom::kLocalhostChainId, mojom::CoinType::ETH),
+                 "eth_getBlockByNumber", "0x5BAD55,true", expected_response);
   json_rpc_service_->Request(
       request, true, base::Value(), mojom::CoinType::ETH,
       base::BindOnce(&OnRequestResponse, &callback_called, true /* success */,
@@ -1266,7 +1277,8 @@ TEST_F(JsonRpcServiceUnitTest, Request) {
 
 TEST_F(JsonRpcServiceUnitTest, GetBalance) {
   bool callback_called = false;
-  SetInterceptor("eth_getBalance", "",
+  SetInterceptor(GetNetwork(mojom::kMainnetChainId, mojom::CoinType::ETH),
+                 "eth_getBalance", "",
                  "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0xb539d5\"}");
   json_rpc_service_->GetBalance(
       "0x4e02f254184E904300e0775E4b8eeCB1", mojom::CoinType::ETH,
@@ -1345,7 +1357,8 @@ TEST_F(JsonRpcServiceUnitTest, GetFeeHistory) {
         }
       })";
 
-  SetInterceptor("eth_feeHistory", "", json);
+  SetInterceptor(GetNetwork(mojom::kLocalhostChainId, mojom::CoinType::ETH),
+                 "eth_feeHistory", "", json);
   base::RunLoop run_loop;
   json_rpc_service_->GetFeeHistory(base::BindLambdaForTesting(
       [&](const std::vector<std::string>& base_fee_per_gas,
@@ -1413,7 +1426,7 @@ TEST_F(JsonRpcServiceUnitTest, GetFeeHistory) {
 TEST_F(JsonRpcServiceUnitTest, GetERC20TokenBalance) {
   bool callback_called = false;
   SetInterceptor(
-      "eth_call", "",
+      GetNetwork(mojom::kMainnetChainId, mojom::CoinType::ETH), "eth_call", "",
       "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":"
       "\"0x00000000000000000000000000000000000000000000000166e12cfce39a0000\""
       "}");
@@ -1487,7 +1500,8 @@ TEST_F(JsonRpcServiceUnitTest, GetERC20TokenBalance) {
 TEST_F(JsonRpcServiceUnitTest, GetERC20TokenAllowance) {
   bool callback_called = false;
   SetInterceptor(
-      "eth_call", "",
+      GetNetwork(mojom::kLocalhostChainId, mojom::CoinType::ETH), "eth_call",
+      "",
       "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":"
       "\"0x00000000000000000000000000000000000000000000000166e12cfce39a0000\""
       "}");
@@ -1554,7 +1568,7 @@ TEST_F(JsonRpcServiceUnitTest, GetERC20TokenAllowance) {
 TEST_F(JsonRpcServiceUnitTest, UnstoppableDomainsProxyReaderGetMany) {
   bool callback_called = false;
   SetInterceptor(
-      "eth_call", "",
+      GetNetwork(mojom::kMainnetChainId, mojom::CoinType::ETH), "eth_call", "",
       "{\"jsonrpc\":\"2.0\",\"id\": \"0\",\"result\": "
       // offset for array
       "\"0x0000000000000000000000000000000000000000000000000000000000000020"
@@ -1684,7 +1698,7 @@ TEST_F(JsonRpcServiceUnitTest, UnstoppableDomainsGetEthAddr) {
   // Return false if getting empty address result for non-exist domains.
   callback_called = false;
   SetInterceptor(
-      "eth_call", "",
+      GetNetwork(mojom::kMainnetChainId, mojom::CoinType::ETH), "eth_call", "",
       "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":"
       "\"0x0000000000000000000000000000000000000000000000000000000000000020"
       "0000000000000000000000000000000000000000000000000000000000000000\"}");
@@ -1699,9 +1713,10 @@ TEST_F(JsonRpcServiceUnitTest, UnstoppableDomainsGetEthAddr) {
 
 TEST_F(JsonRpcServiceUnitTest, GetIsEip1559) {
   bool callback_called = false;
-
+  GURL expected_network =
+      GetNetwork(mojom::kLocalhostChainId, mojom::CoinType::ETH);
   // Successful path when the network is EIP1559
-  SetIsEip1559Interceptor(true);
+  SetIsEip1559Interceptor(expected_network, true);
   json_rpc_service_->GetIsEip1559(
       base::BindOnce(&OnBoolResponse, &callback_called,
                      mojom::ProviderError::kSuccess, "", true));
@@ -1710,7 +1725,7 @@ TEST_F(JsonRpcServiceUnitTest, GetIsEip1559) {
 
   // Successful path when the network is not EIP1559
   callback_called = false;
-  SetIsEip1559Interceptor(false);
+  SetIsEip1559Interceptor(expected_network, false);
   json_rpc_service_->GetIsEip1559(
       base::BindOnce(&OnBoolResponse, &callback_called,
                      mojom::ProviderError::kSuccess, "", false));
@@ -1755,11 +1770,12 @@ TEST_F(JsonRpcServiceUnitTest, UpdateIsEip1559LocalhostChain) {
   TestJsonRpcServiceObserver observer(mojom::kLocalhostChainId,
                                       mojom::CoinType::ETH, true);
   json_rpc_service_->AddObserver(observer.GetReceiver());
-
+  GURL expected_network =
+      GetNetwork(mojom::kLocalhostChainId, mojom::CoinType::ETH);
   // Switching to localhost should update is_eip1559 to true when is_eip1559 is
   // true in the RPC response.
   EXPECT_FALSE(GetIsEip1559FromPrefs(mojom::kLocalhostChainId));
-  SetIsEip1559Interceptor(true);
+  SetIsEip1559Interceptor(expected_network, true);
   EXPECT_TRUE(SetNetwork(mojom::kLocalhostChainId, mojom::CoinType::ETH));
   EXPECT_TRUE(observer.chain_changed_called());
   EXPECT_TRUE(observer.is_eip1559_changed_called());
@@ -1768,7 +1784,7 @@ TEST_F(JsonRpcServiceUnitTest, UpdateIsEip1559LocalhostChain) {
   // Switching to localhost should update is_eip1559 to false when is_eip1559
   // is false in the RPC response.
   observer.Reset(mojom::kLocalhostChainId, false);
-  SetIsEip1559Interceptor(false);
+  SetIsEip1559Interceptor(expected_network, false);
   EXPECT_TRUE(SetNetwork(mojom::kLocalhostChainId, mojom::CoinType::ETH));
   EXPECT_TRUE(observer.chain_changed_called());
   EXPECT_TRUE(observer.is_eip1559_changed_called());
@@ -1778,7 +1794,7 @@ TEST_F(JsonRpcServiceUnitTest, UpdateIsEip1559LocalhostChain) {
   // event.
   observer.Reset(mojom::kLocalhostChainId, false);
   EXPECT_FALSE(GetIsEip1559FromPrefs(mojom::kLocalhostChainId));
-  SetIsEip1559Interceptor(false);
+  SetIsEip1559Interceptor(expected_network, false);
   EXPECT_TRUE(SetNetwork(mojom::kLocalhostChainId, mojom::CoinType::ETH));
   EXPECT_TRUE(observer.chain_changed_called());
   EXPECT_FALSE(observer.is_eip1559_changed_called());
@@ -1818,7 +1834,7 @@ TEST_F(JsonRpcServiceUnitTest, UpdateIsEip1559CustomChain) {
   json_rpc_service_->AddObserver(observer.GetReceiver());
 
   EXPECT_FALSE(GetIsEip1559FromPrefs(chain1.chain_id));
-  SetIsEip1559Interceptor(true);
+  SetIsEip1559Interceptor(GURL(chain_ptr1->rpc_urls[0]), true);
   EXPECT_TRUE(SetNetwork(chain1.chain_id, mojom::CoinType::ETH));
   EXPECT_TRUE(observer.chain_changed_called());
   EXPECT_TRUE(observer.is_eip1559_changed_called());
@@ -1828,7 +1844,7 @@ TEST_F(JsonRpcServiceUnitTest, UpdateIsEip1559CustomChain) {
   // is_eip1559 is false in the RPC response.
   observer.Reset(chain2.chain_id, false);
   EXPECT_TRUE(GetIsEip1559FromPrefs(chain2.chain_id));
-  SetIsEip1559Interceptor(false);
+  SetIsEip1559Interceptor(GURL(chain_ptr2->rpc_urls[0]), false);
   EXPECT_TRUE(SetNetwork(chain2.chain_id, mojom::CoinType::ETH));
   EXPECT_TRUE(observer.chain_changed_called());
   EXPECT_TRUE(observer.is_eip1559_changed_called());
@@ -1838,7 +1854,7 @@ TEST_F(JsonRpcServiceUnitTest, UpdateIsEip1559CustomChain) {
   // event.
   observer.Reset(chain2.chain_id, false);
   EXPECT_FALSE(GetIsEip1559FromPrefs(chain2.chain_id));
-  SetIsEip1559Interceptor(false);
+  SetIsEip1559Interceptor(GURL(chain_ptr2->rpc_urls[0]), false);
   EXPECT_TRUE(SetNetwork(chain2.chain_id, mojom::CoinType::ETH));
   EXPECT_TRUE(observer.chain_changed_called());
   EXPECT_FALSE(observer.is_eip1559_changed_called());
@@ -1927,7 +1943,8 @@ TEST_F(JsonRpcServiceUnitTest, GetERC721OwnerOf) {
   EXPECT_TRUE(callback_called);
 
   SetInterceptor(
-      "eth_call", "",
+      GetNetwork(mojom::kLocalhostChainId, mojom::CoinType::ETH), "eth_call",
+      "",
       "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":"
       "\"0x000000000000000000000000983110309620d911731ac0932219af0609"
       "1b6744\"}");
@@ -2022,7 +2039,8 @@ TEST_F(JsonRpcServiceUnitTest, GetERC721Balance) {
   EXPECT_TRUE(callback_called);
 
   SetInterceptor(
-      "eth_call", "",
+      GetNetwork(mojom::kLocalhostChainId, mojom::CoinType::ETH), "eth_call",
+      "",
       "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":"
       "\"0x000000000000000000000000983110309620d911731ac0932219af0609"
       "1b6744\"}");
@@ -2091,7 +2109,8 @@ TEST_F(JsonRpcServiceUnitTest, GetERC721Balance) {
 TEST_F(JsonRpcServiceUnitTest, GetSupportsInterface) {
   // Successful, and does support the interface
   bool callback_called = false;
-  SetInterceptor("eth_call", "",
+  SetInterceptor(GetNetwork(mojom::kLocalhostChainId, mojom::CoinType::ETH),
+                 "eth_call", "",
                  "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":"
                  "\"0x000000000000000000000000000000000000000000000000000000000"
                  "0000001\"}");
@@ -2104,7 +2123,8 @@ TEST_F(JsonRpcServiceUnitTest, GetSupportsInterface) {
 
   // Successful, but does not support the interface
   callback_called = false;
-  SetInterceptor("eth_call", "",
+  SetInterceptor(GetNetwork(mojom::kLocalhostChainId, mojom::CoinType::ETH),
+                 "eth_call", "",
                  "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":"
                  "\"0x000000000000000000000000000000000000000000000000000000000"
                  "0000000\"}");
@@ -2118,7 +2138,8 @@ TEST_F(JsonRpcServiceUnitTest, GetSupportsInterface) {
   // Invalid result, should be in hex form
   // todo can remove this one if we have checks for parsing errors
   callback_called = false;
-  SetInterceptor("eth_call", "",
+  SetInterceptor(GetNetwork(mojom::kLocalhostChainId, mojom::CoinType::ETH),
+                 "eth_call", "",
                  "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0\"}");
   json_rpc_service_->GetSupportsInterface(
       "0x06012c8cf97BEaD5deAe237070F9587f8E7A266d", "0x80ac58cd",
@@ -2210,20 +2231,22 @@ TEST_F(JsonRpcServiceUnitTest, Reset) {
 }
 
 TEST_F(JsonRpcServiceUnitTest, GetSolanaBalance) {
-  SetInterceptor("getBalance", "",
+  auto expected_network =
+      GetNetwork(mojom::kSolanaMainnet, mojom::CoinType::SOL);
+  SetInterceptor(expected_network, "getBalance", "",
                  "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":"
                  "{\"context\":{\"slot\":106921266},\"value\":513234116063}}");
   TestGetSolanaBalance(513234116063ULL, mojom::SolanaProviderError::kSuccess,
                        "");
 
   // Response parsing error
-  SetInterceptor("getBalance", "",
+  SetInterceptor(expected_network, "getBalance", "",
                  "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0\"}");
   TestGetSolanaBalance(0u, mojom::SolanaProviderError::kParsingError,
                        l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR));
 
   // JSON RPC error
-  SetInterceptor("getBalance", "",
+  SetInterceptor(expected_network, "getBalance", "",
                  "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":"
                  "{\"code\":-32601, \"message\": \"method does not exist\"}}");
   TestGetSolanaBalance(0u, mojom::SolanaProviderError::kMethodNotFound,
@@ -2236,8 +2259,10 @@ TEST_F(JsonRpcServiceUnitTest, GetSolanaBalance) {
 }
 
 TEST_F(JsonRpcServiceUnitTest, GetSPLTokenAccountBalance) {
+  auto expected_network =
+      GetNetwork(mojom::kSolanaMainnet, mojom::CoinType::SOL);
   SetInterceptor(
-      "getTokenAccountBalance", "",
+      expected_network, "getTokenAccountBalance", "",
       "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":"
       "{\"context\":{\"slot\":1069},\"value\":{\"amount\":\"9864\","
       "\"decimals\":2,\"uiAmount\":98.64,\"uiAmountString\":\"98.64\"}}}");
@@ -2245,14 +2270,14 @@ TEST_F(JsonRpcServiceUnitTest, GetSPLTokenAccountBalance) {
                                 mojom::SolanaProviderError::kSuccess, "");
 
   // Response parsing error
-  SetInterceptor("getTokenAccountBalance", "",
+  SetInterceptor(expected_network, "getTokenAccountBalance", "",
                  "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0\"}");
   TestGetSPLTokenAccountBalance(
       "", 0u, "", mojom::SolanaProviderError::kParsingError,
       l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR));
 
   // JSON RPC error
-  SetInterceptor("getTokenAccountBalance", "",
+  SetInterceptor(expected_network, "getTokenAccountBalance", "",
                  "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":"
                  "{\"code\":-32601, \"message\": \"method does not exist\"}}");
   TestGetSPLTokenAccountBalance("", 0u, "",
@@ -2272,8 +2297,10 @@ TEST_F(JsonRpcServiceUnitTest, SendSolanaTransaction) {
       l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS),
       "" /* signed_tx */);
 
+  auto expected_network_url =
+      GetNetwork(mojom::kLocalhostChainId, mojom::CoinType::SOL);
   SetInterceptor(
-      "sendTransaction", "",
+      expected_network_url, "sendTransaction", "",
       "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":"
       "\"2id3YC2jK9G5Wo2phDx4gJVAew8DcY5NAojnVuao8rkxwPYPe8cSwE5GzhEgJA2y8fVjDE"
       "o6iR6ykBvDxrTQrtpb\"}");
@@ -2284,13 +2311,13 @@ TEST_F(JsonRpcServiceUnitTest, SendSolanaTransaction) {
       mojom::SolanaProviderError::kSuccess, "");
 
   // Response parsing error
-  SetInterceptor("sendTransaction", "",
+  SetInterceptor(expected_network_url, "sendTransaction", "",
                  "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":0}");
   TestSendSolanaTransaction("", mojom::SolanaProviderError::kParsingError,
                             l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR));
 
   // JSON RPC error
-  SetInterceptor("sendTransaction", "",
+  SetInterceptor(expected_network_url, "sendTransaction", "",
                  "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":"
                  "{\"code\":-32601, \"message\": \"method does not exist\"}}");
   TestSendSolanaTransaction("", mojom::SolanaProviderError::kMethodNotFound,
@@ -2304,7 +2331,10 @@ TEST_F(JsonRpcServiceUnitTest, SendSolanaTransaction) {
 }
 
 TEST_F(JsonRpcServiceUnitTest, GetSolanaLatestBlockhash) {
-  SetInterceptor("getLatestBlockhash", "",
+  EXPECT_TRUE(SetNetwork(mojom::kLocalhostChainId, mojom::CoinType::SOL));
+  auto expected_network_url =
+      GetNetwork(mojom::kLocalhostChainId, mojom::CoinType::SOL);
+  SetInterceptor(expected_network_url, "getLatestBlockhash", "",
                  "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":"
                  "{\"context\":{\"slot\":1069},\"value\":{\"blockhash\":"
                  "\"EkSnNWid2cvwEVnVx9aBqawnmiCNiDgp3gUdkDPTKN1N\", "
@@ -2314,14 +2344,14 @@ TEST_F(JsonRpcServiceUnitTest, GetSolanaLatestBlockhash) {
                                mojom::SolanaProviderError::kSuccess, "");
 
   // Response parsing error
-  SetInterceptor("getLatestBlockhash", "",
+  SetInterceptor(expected_network_url, "getLatestBlockhash", "",
                  "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0\"}");
   TestGetSolanaLatestBlockhash(
       "", mojom::SolanaProviderError::kParsingError,
       l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR));
 
   // JSON RPC error
-  SetInterceptor("getLatestBlockhash", "",
+  SetInterceptor(expected_network_url, "getLatestBlockhash", "",
                  "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":"
                  "{\"code\":-32601, \"message\": \"method does not exist\"}}");
   TestGetSolanaLatestBlockhash("", mojom::SolanaProviderError::kMethodNotFound,
@@ -2438,7 +2468,10 @@ TEST_F(JsonRpcServiceUnitTest, GetSolanaSignatureStatuses) {
         }
       }
   )";
-  SetInterceptor("getSignatureStatuses", "", json);
+  EXPECT_TRUE(SetNetwork(mojom::kLocalhostChainId, mojom::CoinType::SOL));
+  auto expected_network_url =
+      GetNetwork(mojom::kLocalhostChainId, mojom::CoinType::SOL);
+  SetInterceptor(expected_network_url, "getSignatureStatuses", "", json);
 
   std::vector<std::string> tx_sigs = {
       "5VERv8NMvzbJMEkV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzr"
@@ -2460,7 +2493,7 @@ TEST_F(JsonRpcServiceUnitTest, GetSolanaSignatureStatuses) {
                                  mojom::SolanaProviderError::kSuccess, "");
 
   // Response parsing error
-  SetInterceptor("getSignatureStatuses", "",
+  SetInterceptor(expected_network_url, "getSignatureStatuses", "",
                  "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0\"}");
   TestGetSolanaSignatureStatuses(
       tx_sigs, std::vector<absl::optional<SolanaSignatureStatus>>(),
@@ -2468,7 +2501,7 @@ TEST_F(JsonRpcServiceUnitTest, GetSolanaSignatureStatuses) {
       l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR));
 
   // JSON RPC error
-  SetInterceptor("getSignatureStatuses", "",
+  SetInterceptor(expected_network_url, "getSignatureStatuses", "",
                  "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":"
                  "{\"code\":-32601, \"message\": \"method does not exist\"}}");
   TestGetSolanaSignatureStatuses(
@@ -2601,7 +2634,8 @@ TEST_F(JsonRpcServiceUnitTest, GetSolanaFeeForMessage) {
 
 TEST_F(JsonRpcServiceUnitTest, GetEthTransactionCount) {
   bool callback_called = false;
-  SetInterceptor("eth_getTransactionCount", "",
+  SetInterceptor(GetNetwork(mojom::kLocalhostChainId, mojom::CoinType::ETH),
+                 "eth_getTransactionCount", "",
                  "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0x1\"}");
 
   json_rpc_service_->GetEthTransactionCount(
@@ -2644,7 +2678,9 @@ TEST_F(JsonRpcServiceUnitTest, GetEthTransactionCount) {
 
 TEST_F(JsonRpcServiceUnitTest, GetFilTransactionCount) {
   bool callback_called = false;
-  SetInterceptor("Filecoin.MpoolGetNonce", "",
+  SetNetwork(mojom::kLocalhostChainId, mojom::CoinType::FIL);
+  SetInterceptor(GetNetwork(mojom::kLocalhostChainId, mojom::CoinType::FIL),
+                 "Filecoin.MpoolGetNonce", "",
                  "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":1}");
 
   json_rpc_service_->GetFilTransactionCount(
