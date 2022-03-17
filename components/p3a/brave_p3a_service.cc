@@ -109,6 +109,7 @@ constexpr const char* kCollectedHistograms[] = {
     "Brave.Wallet.UsageDaysInWeek",
     "Brave.Wallet.UsageMonthly.2",
     "Brave.Welcome.InteractionStatus",
+    "Brave.Welcome.P3AOptIn",
 
     // IPFS
     "Brave.IPFS.IPFSCompanionInstalled",
