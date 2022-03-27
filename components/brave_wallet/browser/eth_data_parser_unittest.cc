@@ -183,9 +183,95 @@ TEST(EthDataParser, GetTransactionInfoFromDataOther) {
                                  "50C2A15D0632f0e87bE4F8e64460f",
                                  &tx_type, &tx_params, &tx_args));
   EXPECT_EQ(tx_type, mojom::TransactionType::Other);
-  // Invaild input
+  // Invalid input
   EXPECT_FALSE(
       GetTransactionInfoFromData("hello", &tx_type, &tx_params, &tx_args));
+}
+
+TEST(EthDataParser, GetTransactionInfoFromDataETHSwapUniswapV3) {
+  mojom::TransactionType tx_type;
+  std::vector<std::string> tx_params;
+  std::vector<std::string> tx_args;
+
+  // Function:
+  // sellEthForTokenToUniswapV3(bytes encodedPath,
+  //                            uint256 minBuyAmount,
+  //                            address recipient)
+  ASSERT_TRUE(GetTransactionInfoFromData(
+      "0x3598d8ab"  // function selector
+      /*********************** HEAD (32x3 bytes) **********************/
+      "0000000000000000000000000000000000000000000000000000000000000060"
+      "0000000000000000000000000000000000000000000000030c1a39b13e25f498"
+      "0000000000000000000000000000000000000000000000000000000000000000"
+
+      /***************************** TAIL *****************************/
+      // calldata reference position for encodedPath
+      "000000000000000000000000000000000000000000000000000000000000002b"
+      "c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2002710af5191b0de278c7286"
+      "d6c7cc6ab6bb8a73ba2cd6000000000000000000000000000000000000000000"
+
+      // extraneous tail segment to be ignored
+      "869584cd0000000000000000000000003ce37278de6388532c3949ce4e886f36"
+      "5b14fb560000000000000000000000000000000000000000000000f7834ab14c"
+      "623f4f93",
+      &tx_type, &tx_params, &tx_args));
+
+  EXPECT_EQ(tx_type, mojom::TransactionType::ETHSwap);
+
+  ASSERT_EQ(tx_params.size(), 3UL);
+  EXPECT_EQ(tx_params[0], "bytes");
+  EXPECT_EQ(tx_params[1], "uint256");
+  EXPECT_EQ(tx_params[2], "uint256");
+
+  ASSERT_EQ(tx_args.size(), 3UL);
+  EXPECT_EQ(tx_args[0],
+            "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+            "af5191b0de278c7286d6c7cc6ab6bb8a73ba2cd6");
+  EXPECT_EQ(tx_args[1], "");
+  EXPECT_EQ(tx_args[2], "0x30c1a39b13e25f498");
+}
+
+TEST(EthDataParser, GetTransactionInfoFromDataETHSwapTransformERC20) {
+  mojom::TransactionType tx_type;
+  std::vector<std::string> tx_params;
+  std::vector<std::string> tx_args;
+
+  // Function:
+  // transformERC20(address inputToken,
+  //                address outputToken,
+  //                uint256 inputTokenAmount,
+  //                uint256 minOutputTokenAmount,
+  //                (uint32,bytes)[] transformations)
+  ASSERT_TRUE(GetTransactionInfoFromData(
+      "0x415565b0"  // function selector
+      /*********************** HEAD (32x5 bytes) **********************/
+      "000000000000000000000000dac17f958d2ee523a2206206994597c13d831ec7"
+      "000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      "00000000000000000000000000000000000000000000000000000004a817c7ff"
+      "00000000000000000000000000000000000000000000000055c75b6fa8d5f0d4"
+      "00000000000000000000000000000000000000000000000000000000000000a0"
+
+      /*********************** TAIL (truncated) ***********************/
+      // calldata reference position for transformations
+      "0000000000000000000000000000000000000000000000000000000000000004"
+      "0000000000000000000000000000000000000000000000000000000000000080"
+      "00000000000000000000000000000000000000000000000000000000000003e0"
+      "0000000000000000000000000000000000000000000000000000000000000480",
+      &tx_type, &tx_params, &tx_args));
+
+  EXPECT_EQ(tx_type, mojom::TransactionType::ETHSwap);
+
+  ASSERT_EQ(tx_params.size(), 3UL);
+  EXPECT_EQ(tx_params[0], "bytes");
+  EXPECT_EQ(tx_params[1], "uint256");
+  EXPECT_EQ(tx_params[2], "uint256");
+
+  ASSERT_EQ(tx_args.size(), 3UL);
+  EXPECT_EQ(tx_args[0],
+            "0xdac17f958d2ee523a2206206994597c13d831ec7"
+            "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
+  EXPECT_EQ(tx_args[1], "0x4a817c7ff");
+  EXPECT_EQ(tx_args[2], "0x55c75b6fa8d5f0d4");
 }
 
 }  // namespace brave_wallet
