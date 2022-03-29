@@ -313,6 +313,7 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
   const [selectedWidgetTab, setSelectedWidgetTab] = React.useState<BuySendSwapTypes>('buy')
   const [showVisibleAssetsModal, setShowVisibleAssetsModal] = React.useState<boolean>(false)
   const [foundTokenInfo, setFoundTokenInfo] = React.useState<BraveWallet.BlockchainToken | undefined>()
+  const [selectedBuyOption, setSelectedBuyOption] = React.useState<BraveWallet.OnRampProvider>(BraveWallet.OnRampProvider.kRamp)
 
   const onToggleRestore = () => {
     setIsRestoring(!isRestoring)
@@ -760,6 +761,10 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
                 onSelectAccount={onSelectAccount}
                 onSelectTab={setSelectedWidgetTab}
                 buyAssetOptions={mockAccountAssetOptions}
+                wyreAssetOptions={mockAccountAssetOptions}
+                rampAssetOptions={mockAccountAssetOptions}
+                selectedBuyOption={selectedBuyOption}
+                onSelectBuyOption={setSelectedBuyOption}
               />
               <SweepstakesBanner />
             </WalletWidgetStandIn>

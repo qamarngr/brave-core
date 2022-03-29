@@ -120,8 +120,9 @@ function Container (props: Props) {
   const [selectedWidgetTab, setSelectedWidgetTab] = React.useState<BuySendSwapTypes>('buy')
   const [showVisibleAssetsModal, setShowVisibleAssetsModal] = React.useState<boolean>(false)
   const [sessionRoute, setSessionRoute] = React.useState<string | undefined>(undefined)
+  const [selectedBuyOption, setSelectedBuyOption] = React.useState<BraveWallet.OnRampProvider>(BraveWallet.OnRampProvider.kRamp)
 
-  const { buyAssetOptions } = useAssets()
+  const { buyAssetOptions, wyreAssetOptions, rampAssetOptions } = useAssets()
 
   const {
     onFindTokenInfoByContractAddress,
@@ -324,7 +325,7 @@ function Container (props: Props) {
   }
 
   const onSubmitBuy = (asset: BraveWallet.BlockchainToken) => {
-    GetBuyOrFaucetUrl(selectedNetwork.chainId, asset, selectedAccount, buyAmount)
+    GetBuyOrFaucetUrl(selectedBuyOption, selectedNetwork.chainId, asset, selectedAccount, buyAmount)
       .then(url => window.open(url, '_blank'))
       .catch(e => console.error(e))
   }
@@ -623,6 +624,10 @@ function Container (props: Props) {
             onSubmitBuy={onSubmitBuy}
             onSelectAccount={onSelectAccount}
             onSelectTab={setSelectedWidgetTab}
+            selectedBuyOption={selectedBuyOption}
+            onSelectBuyOption={setSelectedBuyOption}
+            wyreAssetOptions={wyreAssetOptions}
+            rampAssetOptions={rampAssetOptions}
           />
           <SweepstakesBanner />
         </WalletWidgetStandIn>

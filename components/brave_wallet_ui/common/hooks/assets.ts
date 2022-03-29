@@ -21,6 +21,13 @@ import useBalance from './balance'
 import { useIsMounted } from './useIsMounted'
 import { useLib } from './useLib'
 
+const setAssetsLogo = (assets: BraveWallet.BlockchainToken[]) => {
+  return assets.map(token => ({
+    ...token,
+    logo: `chrome://erc-token-images/${token.logo}`
+  }) as BraveWallet.BlockchainToken)
+}
+
 export function useAssets () {
   // redux
   const {
@@ -50,17 +57,29 @@ export function useAssets () {
   }, [userVisibleTokensInfo, selectedNetwork])
 
   const [buyAssetOptions, setBuyAssetOptions] = React.useState<BraveWallet.BlockchainToken[]>([nativeAsset])
+  const [wyreAssetOptions, setWyreAssetOptions] = React.useState<BraveWallet.BlockchainToken[]>([])
+  const [rampAssetOptions, setRampAssetOptions] = React.useState<BraveWallet.BlockchainToken[]>([])
 
   React.useEffect(() => {
-    isMounted && getBuyAssets().then(tokens => {
-      if (isMounted) {
-        setBuyAssetOptions(tokens.map(token => ({
-          ...token,
-          logo: `chrome://erc-token-images/${token.logo}`
-        }) as BraveWallet.BlockchainToken))
-      }
-    }).catch(e => console.error(e))
-  }, [])
+    const fetchTokens = async () => {
+      const wyreRegistryTokens = await getBuyAssets(BraveWallet.OnRampProvider.kWyre, selectedNetwork.chainId)
+      const rampRegistryTokens = await getBuyAssets(BraveWallet.OnRampProvider.kRamp, selectedNetwork.chainId)
+      const wyreAssetOptions = setAssetsLogo(wyreRegistryTokens)
+      const rampAssetOptions = setAssetsLogo(rampRegistryTokens)
+      setWyreAssetOptions(wyreAssetOptions)
+      setRampAssetOptions(rampAssetOptions)
+
+      const allTokens = [...rampAssetOptions, ...wyreAssetOptions]
+      setBuyAssetOptions(allTokens)
+    }
+
+    if (isMounted) {
+      fetchTokens()
+        .catch(e => {
+          console.error(e)
+        })
+    }
+  }, [selectedNetwork])
 
   const assetsByValueAndNetwork = React.useMemo(() => {
     if (!assetsByNetwork) {
@@ -85,6 +104,8 @@ export function useAssets () {
   return {
     sendAssetOptions: assetsByNetwork,
     buyAssetOptions,
+    rampAssetOptions,
+    wyreAssetOptions,
     panelUserAssetList: assetsByValueAndNetwork
   }
 }
