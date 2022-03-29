@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "brave/components/brave_wallet/browser/ethereum_permission_utils.h"
+#include "brave/components/brave_wallet/browser/permission_utils.h"
 
 #include "base/no_destructor.h"
 #include "base/strings/strcat.h"
@@ -16,7 +16,8 @@
 
 namespace {
 
-constexpr char kAddrPattern[] = "addr%3D(0x[[:xdigit:]]{40})";
+constexpr char kEthAddrPattern[] = "addr%3D(0x[[:xdigit:]]{40})";
+constexpr char kAddrPattern[] = "addr%3D([[:alnum:]]+)";
 
 // Given an origin and an account address, append the account address to the
 // end of the host piece of the origin, then return it as the new origin.
@@ -38,27 +39,36 @@ bool AddAccountToHost(const url::Origin& old_origin,
 
 // Given the overwritten origin, such as https://test.com{addr=123&addr=456},
 // extract all addresses and save into address_queue.
-void ExtractAddresses(const url::Origin& origin,
+void ExtractAddresses(permissions::RequestType type,
+                      const url::Origin& origin,
                       std::queue<std::string>* address_queue) {
-  static const base::NoDestructor<re2::RE2> kAddrRegex(kAddrPattern);
+  static base::NoDestructor<re2::RE2> kEthAddrRegex(kEthAddrPattern);
+  static base::NoDestructor<re2::RE2> kAddrRegex(kAddrPattern);
   DCHECK(!origin.opaque() && address_queue);
 
   std::string origin_string(origin.Serialize());
   re2::StringPiece input(origin_string);
   std::string match;
-  while (re2::RE2::FindAndConsume(&input, *kAddrRegex, &match)) {
+  re2::RE2* regex;
+  if (type == permissions::RequestType::kBraveEthereum)
+    regex = kEthAddrRegex.get();
+  else
+    regex = kAddrRegex.get();
+  while (re2::RE2::FindAndConsume(&input, *regex, &match)) {
     address_queue->push(match);
   }
 }
 
 // Parse requesting origin in either sub-request format (one address) or
 // non-sub-request format (all addresses).
-bool ParseRequestingOriginInternal(const url::Origin& origin,
+bool ParseRequestingOriginInternal(permissions::RequestType type,
+                                   const url::Origin& origin,
                                    bool sub_req_format,
                                    url::Origin* requesting_origin,
                                    std::string* account,
                                    std::queue<std::string>* address_queue) {
-  if (origin.opaque())
+  if (origin.opaque() || (type != permissions::RequestType::kBraveEthereum &&
+                          type != permissions::RequestType::kBraveSolana))
     return false;
 
   std::string scheme_host_group;
@@ -66,10 +76,15 @@ bool ParseRequestingOriginInternal(const url::Origin& origin,
   std::string port_group;
 
   // Validate input format.
-  std::string pattern = sub_req_format
-                            ? "(.*)(0x[[:xdigit:]]{40})(:[0-9]+)*"
-                            : "(.*)%7Baddr%3D0x[[:xdigit:]]{40}(%"
-                              "26addr%3D0x[[:xdigit:]]{40})*%7D(:[0-9]+)*";
+  std::string pattern;
+  if (type == permissions::RequestType::kBraveEthereum)
+    pattern = sub_req_format ? "(.*)(0x[[:xdigit:]]{40})(:[0-9]+)*"
+                             : "(.*)%7Baddr%3D0x[[:xdigit:]]{40}(%"
+                               "26addr%3D0x[[:xdigit:]]{40})*%7D(:[0-9]+)*";
+  else
+    pattern = sub_req_format ? "(.*)__([[:alnum:]]+)(:[0-9]+)*"
+                             : "(.*)%7Baddr%3D[[:alnum:]]+(%"
+                               "26addr%3D[[:alnum:]]+)*%7D(:[0-9]+)*";
   RE2 full_pattern(pattern);
   if (!re2::RE2::FullMatch(origin.Serialize(), full_pattern, &scheme_host_group,
                            &address_group, &port_group)) {
@@ -87,7 +102,7 @@ bool ParseRequestingOriginInternal(const url::Origin& origin,
   }
 
   if (!sub_req_format && address_queue) {
-    ExtractAddresses(origin, address_queue);
+    ExtractAddresses(type, origin, address_queue);
   }
 
   return true;
@@ -116,28 +131,41 @@ bool GetConcatOriginFromWalletAddresses(
   return AddAccountToHost(old_origin, addresses_suffix, new_origin);
 }
 
-bool ParseRequestingOriginFromSubRequest(const url::Origin& origin,
+bool ParseRequestingOriginFromSubRequest(permissions::RequestType type,
+                                         const url::Origin& origin,
                                          url::Origin* requesting_origin,
                                          std::string* account) {
-  return ParseRequestingOriginInternal(origin, true /* sub_req_format */,
+  return ParseRequestingOriginInternal(type, origin, true /* sub_req_format */,
                                        requesting_origin, account,
                                        nullptr /* address_queue */);
 }
 
-bool ParseRequestingOrigin(const url::Origin& origin,
+bool ParseRequestingOrigin(permissions::RequestType type,
+                           const url::Origin& origin,
                            url::Origin* requesting_origin,
                            std::queue<std::string>* address_queue) {
   if (address_queue && !address_queue->empty())
     return false;
-  return ParseRequestingOriginInternal(origin, false /* sub_req_format */,
+  return ParseRequestingOriginInternal(type, origin, false /* sub_req_format */,
                                        requesting_origin, nullptr /* account */,
                                        address_queue);
 }
 
-bool GetSubRequestOrigin(const url::Origin& old_origin,
+bool GetSubRequestOrigin(permissions::RequestType type,
+                         const url::Origin& old_origin,
                          const std::string& account,
                          url::Origin* new_origin) {
-  return AddAccountToHost(old_origin, account, new_origin);
+  if (type != permissions::RequestType::kBraveEthereum &&
+      type != permissions::RequestType::kBraveSolana)
+    return false;
+  std::string account_with_separater;
+  if (type == permissions::RequestType::kBraveEthereum)
+    account_with_separater = account;
+  else
+    account_with_separater =
+        account.empty() ? account : base::StrCat({"__", account});
+
+  return AddAccountToHost(old_origin, account_with_separater, new_origin);
 }
 
 GURL GetConnectWithSiteWebUIURL(const GURL& webui_base_url,
