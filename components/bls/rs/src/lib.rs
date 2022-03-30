@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 use bls_signatures::{Serialize, PrivateKey};
-use filecoin_signer::transaction_sign;
-use filecoin_signer::api::{UnsignedMessageAPI};
+use crate::signature::{transaction_sign,UnsignedMessageAPI};
+use filecoin_signer::api::{};
 
 #[cxx::bridge(namespace = bls)]
 mod ffi {
