@@ -85,6 +85,10 @@ std::string getStateSearchMsgLimited(const std::string& cid, uint64_t period) {
           .c_str());
   return result;
 }
+std::string getSendTransaction(const std::string& signed_tx) {
+  return "";
+}
+
 }  // namespace fil
 
 }  // namespace brave_wallet

@@ -173,13 +173,24 @@ void FilTxManager::OnGetNextNonce(std::unique_ptr<FilTxMeta> meta,
   meta->set_status(mojom::TransactionStatus::Approved);
   tx_state_manager_->AddOrUpdateTx(*meta);
 
-  // TODO(spylogsster): Publish transaction
-  std::move(callback).Run(false,
+  json_rpc_service_->SendFilecoinTransaction(
+      keyring_service_->SignTransactionByFilecoinKeyring(meta->tx()),
+      base::BindOnce(&FilTxManager::OnSendFilecoinTransaction,
+                     weak_factory_.GetWeakPtr(), meta->id(),
+                     std::move(callback)));
+}
+
+void FilTxManager::OnSendFilecoinTransaction(
+    const std::string& tx_meta_id,
+    ApproveTransactionCallback callback,
+    const std::string& tx_hash,
+    mojom::FilecoinProviderError error,
+    const std::string& error_message) {
+  std::move(callback).Run(true,
                           mojom::ProviderErrorUnion::NewFilecoinProviderError(
                               mojom::FilecoinProviderError::kInternalError),
                           std::string());
 }
-
 void FilTxManager::GetAllTransactionInfo(
     const std::string& from,
     GetAllTransactionInfoCallback callback) {
