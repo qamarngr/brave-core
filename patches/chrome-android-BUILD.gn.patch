@@ -1,5 +1,5 @@
 diff --git a/chrome/android/BUILD.gn b/chrome/android/BUILD.gn
-index 4c9affbf42d33c6c3593be43c103844ea22584b0..c9f8c637c62fb2539a15526d5c6501a5b0be27d2 100644
+index 4c9affbf42d33c6c3593be43c103844ea22584b0..b5c9e002942c3866d7ff73b26cf547774b339c1c 100644
 --- a/chrome/android/BUILD.gn
 +++ b/chrome/android/BUILD.gn
 @@ -267,6 +267,7 @@ android_resources("chrome_app_java_resources") {
@@ -50,7 +50,23 @@ index 4c9affbf42d33c6c3593be43c103844ea22584b0..c9f8c637c62fb2539a15526d5c6501a5
        if (_is_monochrome) {
          deps += [ "//android_webview:locale_pak_assets" ]
          if (webview_includes_weblayer && !_is_bundle_module) {
-@@ -2632,6 +2638,7 @@ android_library("base_module_java") {
+@@ -2439,6 +2445,7 @@ static_library("browser_test_support") {
+     "//url:gurl_android_test_helper",
+   ]
+ }
++_lib_dir = get_label_info("//brave/third_party/android_deps:com_wireguard_android($default_toolchain)","target_out_dir") + "/com_wireguard_android_java/jni"
+ 
+ # Defines a target that derives from the chrome public application. This
+ # can be either an APK or an app bundle module. This supports
+@@ -2491,6 +2498,7 @@ template("chrome_public_apk_or_module_tmpl") {
+     load_library_from_apk = chromium_linker_supported
+ 
+     version_name = chrome_version_name
++    deps += ["//brave/third_party/android_deps:com_wireguard_android_J__unpack_aar"]loadable_modules = [ "$_lib_dir/$android_app_abi/libwg-go.so"]
+   }
+ }
+ 
+@@ -2632,6 +2640,7 @@ android_library("base_module_java") {
      "//components/payments/content/android:service_java",
      "//third_party/androidx:androidx_browser_browser_java",
    ]
@@ -58,7 +74,7 @@ index 4c9affbf42d33c6c3593be43c103844ea22584b0..c9f8c637c62fb2539a15526d5c6501a5
  
    # More deps for DFMs.
    if (dfmify_dev_ui) {
-@@ -2743,6 +2752,7 @@ template("monochrome_public_apk_or_module_tmpl") {
+@@ -2782,6 +2791,7 @@ template("monochrome_public_apk_or_module_tmpl") {
          deps += [ "//weblayer/browser/java:upstream_java" ]
        }
      }
