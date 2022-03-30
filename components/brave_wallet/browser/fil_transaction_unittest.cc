@@ -5,6 +5,7 @@
 
 #include "brave/components/brave_wallet/browser/fil_transaction.h"
 
+#include "brave/components/bls/rs/src/lib.rs.h"
 #include "brave/components/brave_wallet/common/brave_wallet.mojom.h"
 #include "brave/components/brave_wallet/common/fil_address.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -48,8 +49,8 @@ TEST(FilTransactionUnitTest, Initialization) {
 
   EXPECT_NE(first, empty);
   auto third = FilTransaction::FromTxData(mojom::FilTxData::New(
-      "1", "2", "3", "4", "5", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q", "6",
-      "cid"));
+      "1", "2", "3", "4", "5", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q",
+      "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq", "6", "cid"));
   EXPECT_TRUE(third);
   EXPECT_EQ(third->nonce().value(), 1u);
   EXPECT_EQ(third->gas_premium(), "2");
@@ -65,80 +66,85 @@ TEST(FilTransactionUnitTest, Initialization) {
 TEST(FilTransactionUnitTest, FromTxData) {
   // nonce empty
   auto empty_nonce = FilTransaction::FromTxData(mojom::FilTxData::New(
-      "", "2", "3", "4", "5", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q", "1",
-      "cid"));
+      "", "2", "3", "4", "5", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q",
+      "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq", "1", "cid"));
   ASSERT_TRUE(empty_nonce);
   EXPECT_FALSE(empty_nonce->nonce());
 
   // non numeric values
   EXPECT_FALSE(FilTransaction::FromTxData(mojom::FilTxData::New(
-      "a", "2", "3", "4", "d", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q", "6",
-      "cid")));
+      "a", "2", "3", "4", "d", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q",
+      "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq", "6", "cid")));
   EXPECT_FALSE(FilTransaction::FromTxData(mojom::FilTxData::New(
-      "1", "b", "3", "4", "5", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q", "6",
-      "cid")));
+      "1", "b", "3", "4", "5", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q",
+      "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq", "6", "cid")));
   EXPECT_FALSE(FilTransaction::FromTxData(mojom::FilTxData::New(
-      "1", "2", "c", "4", "5", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q", "6",
-      "cid")));
+      "1", "2", "c", "4", "5", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q",
+      "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq", "6", "cid")));
   EXPECT_FALSE(FilTransaction::FromTxData(mojom::FilTxData::New(
-      "1", "2", "3", "d", "5", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q", "6",
-      "cid")));
+      "1", "2", "3", "d", "5", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q",
+      "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq", "6", "cid")));
   EXPECT_FALSE(FilTransaction::FromTxData(mojom::FilTxData::New(
-      "1", "2", "3", "4", "e", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q", "6",
-      "cid")));
+      "1", "2", "3", "4", "e", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q",
+      "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq", "6", "cid")));
 
   // empty values
   EXPECT_TRUE(FilTransaction::FromTxData(mojom::FilTxData::New(
-      "", "2", "3", "4", "5", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q", "6",
-      "cid")));
+      "", "2", "3", "4", "5", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q",
+      "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq", "6", "cid")));
   EXPECT_TRUE(FilTransaction::FromTxData(mojom::FilTxData::New(
-      "1", "", "3", "4", "5", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q", "6",
-      "cid")));
+      "1", "", "3", "4", "5", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q",
+      "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq", "6", "cid")));
   EXPECT_TRUE(FilTransaction::FromTxData(mojom::FilTxData::New(
-      "1", "2", "", "4", "5", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q", "6",
-      "cid")));
+      "1", "2", "", "4", "5", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q",
+      "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq", "6", "cid")));
   EXPECT_TRUE(FilTransaction::FromTxData(mojom::FilTxData::New(
-      "1", "2", "3", "", "", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q", "6",
-      "cid")));
+      "1", "2", "3", "", "", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q",
+      "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq", "6", "cid")));
   EXPECT_FALSE(FilTransaction::FromTxData(
-      mojom::FilTxData::New("1", "2", "3", "4", "5", "", "6", "cid")));
+      mojom::FilTxData::New("1", "2", "3", "4", "5", "", "", "6", "cid")));
   EXPECT_TRUE(FilTransaction::FromTxData(mojom::FilTxData::New(
-      "1", "2", "3", "4", "5", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q", "6",
-      "")));
+      "1", "2", "3", "4", "5", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q",
+      "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq", "6", "")));
 
   // invalid address
   EXPECT_FALSE(FilTransaction::FromTxData(mojom::FilTxData::New(
-      "1", "2", "3", "4", "e", "t1h4n7rp3q", "0x1", "cid")));
+      "1", "2", "3", "4", "e", "t1h4n7rp3q", "t1h4n7rp2a", "0x1", "cid")));
 
   // invalid value
   EXPECT_FALSE(FilTransaction::FromTxData(mojom::FilTxData::New(
       "1", "2", "3", "4", "e", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q",
-      "0x1", "cid")));
+      "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq", "0x1", "cid")));
   EXPECT_FALSE(FilTransaction::FromTxData(mojom::FilTxData::New(
-      "1", "2", "3", "4", "e", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q", "",
-      "cid")));
+      "1", "2", "3", "4", "e", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q",
+      "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq", "", "cid")));
 }
 
 TEST(FilTransactionUnitTest, Serialization) {
   auto transaction = FilTransaction::FromTxData(mojom::FilTxData::New(
-      "1", "2", "3", "4", "5", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q", "6",
-      "cid"));
+      "1", "2", "3", "4", "5", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q",
+      "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq", "6", "cid"));
   EXPECT_EQ(transaction, FilTransaction::FromValue(transaction->ToValue()));
 
   auto empty_nonce = FilTransaction::FromTxData(mojom::FilTxData::New(
-      "", "2", "3", "1", "5", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q", "6",
-      "cid"));
+      "", "2", "3", "1", "5", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q",
+      "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq", "6", "cid"));
   EXPECT_EQ(empty_nonce, FilTransaction::FromValue(empty_nonce->ToValue()));
 }
 
 TEST(FilTransactionUnitTest, GetMessageToSign) {
   auto transaction = FilTransaction::FromTxData(mojom::FilTxData::New(
-      "1", "2", "3", "1", "5", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q", "6",
-      "cid"));
+      "1", "2", "3", "1", "5", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q",
+      "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq", "6", ""));
   EXPECT_EQ(transaction->GetMessageToSign(),
-            "{\"gas_fee_cap\":\"3\",\"gas_limit\":\"1\",\"gas_"
-            "premium\":\"2\",\"max_fee\":\"5\",\"nonce\":\"1\",\"to\":"
+            "{\"from\":\"t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq\",\"gas_fee_"
+            "cap\":\"3\",\"gas_limit\":1,\"gas_premium\":\"2\",\"max_fee\":"
+            "\"5\",\"method\":0,\"nonce\":1,\"params\":\"\",\"to\":"
             "\"t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q\",\"value\":\"6\"}");
+  bls::fil_transaction_sign(transaction->GetMessageToSign(),
+                            "8VcW07ADswS4BV2cxi5rnIadVsyTDDhY1NfDH19T8Uo=");
+  // EXPECT_EQ(result.message, "");
+  // EXPECT_EQ(result.signature, "");
 }
 
 }  // namespace brave_wallet
