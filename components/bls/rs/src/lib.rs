@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 use bls_signatures::{Serialize, PrivateKey};
 use filecoin_signer::transaction_sign;
-use filecoin_signer::api::{UnsignedMessageAPI,SignedMessageAPI};
+use filecoin_signer::api::{UnsignedMessageAPI};
 
 #[cxx::bridge(namespace = bls)]
 mod ffi {
@@ -10,20 +10,18 @@ mod ffi {
         fn fil_transaction_sign(
           transaction: &str,
           private_key_base64: &str,
-      ) -> bool;
+      ) -> String;
     }
 }
 
 fn fil_transaction_sign(
   transaction: &str,
   private_key_base64: &str,
-) -> bool {
+) -> String {
   let message_user_api: UnsignedMessageAPI = serde_json::from_str(transaction).unwrap();
   let private_key = filecoin_signer::PrivateKey::try_from(private_key_base64.to_string()).unwrap();
   let raw_signature = transaction_sign(&message_user_api, &private_key).unwrap();
-  println!("{:?}", raw_signature.message);
-  println!("{:?}", raw_signature.signature);
-  true
+  serde_json::to_string(&raw_signature).unwrap_or_else(|_| "".into())
 }
 
 /// Generates a public key from the private key

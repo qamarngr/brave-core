@@ -56,7 +56,7 @@ class FilTransaction {
   void set_cid(const std::string& cid) { cid_ = cid; }
 
   virtual std::string GetMessageToSign() const;
-
+  std::string GetSignedTransaction(const std::string& private_key_base64) const;
   virtual base::Value ToValue() const;
   static absl::optional<FilTransaction> FromValue(const base::Value& value);
 

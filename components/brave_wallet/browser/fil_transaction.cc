@@ -12,6 +12,7 @@
 #include "base/json/json_writer.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/values.h"
+#include "brave/components/bls/rs/src/lib.rs.h"
 #include "brave/components/brave_wallet/common/fil_address.h"
 #include "brave/components/json/rs/src/lib.rs.h"
 
@@ -116,15 +117,13 @@ base::Value FilTransaction::ToValue() const {
   base::Value dict(base::Value::Type::DICTIONARY);
   dict.SetStringKey("nonce",
                     nonce_ ? base::NumberToString(nonce_.value()) : "");
-  dict.SetStringKey("gas_premium", gas_premium_);
-  dict.SetStringKey("gas_fee_cap", gas_fee_cap_);
-  dict.SetStringKey("max_fee", max_fee_);
-  dict.SetStringKey("gas_limit", base::NumberToString(gas_limit_));
+  dict.SetStringKey("gaspremium", gas_premium_);
+  dict.SetStringKey("gasfeecap", gas_fee_cap_);
+  dict.SetStringKey("maxfee", max_fee_);
+  dict.SetStringKey("gaslimit", base::NumberToString(gas_limit_));
   dict.SetStringKey("to", to_.EncodeAsString());
   dict.SetStringKey("from", from_.EncodeAsString());
   dict.SetStringKey("value", value_);
-  dict.SetIntKey("method", 0);
-  dict.SetStringKey("params", "");
 
   base::Value cid(base::Value::Type::DICTIONARY);
   cid.SetStringKey("/", cid_);
@@ -147,22 +146,22 @@ absl::optional<FilTransaction> FilTransaction::FromValue(
     tx.nonce_ = nonce;
   }
 
-  const std::string* gas_premium = value.FindStringKey("gas_premium");
+  const std::string* gas_premium = value.FindStringKey("gaspremium");
   if (!gas_premium)
     return absl::nullopt;
   tx.gas_premium_ = *gas_premium;
 
-  const std::string* gas_fee_cap = value.FindStringKey("gas_fee_cap");
+  const std::string* gas_fee_cap = value.FindStringKey("gasfeecap");
   if (!gas_fee_cap)
     return absl::nullopt;
   tx.gas_fee_cap_ = *gas_fee_cap;
 
-  const std::string* max_fee = value.FindStringKey("max_fee");
+  const std::string* max_fee = value.FindStringKey("maxfee");
   if (!max_fee)
     return absl::nullopt;
   tx.max_fee_ = *max_fee;
 
-  const std::string* gas_limit = value.FindStringKey("gas_limit");
+  const std::string* gas_limit = value.FindStringKey("gaslimit");
   if (!gas_limit || !base::StringToInt64(*gas_limit, &tx.gas_limit_))
     return absl::nullopt;
 
@@ -189,16 +188,27 @@ absl::optional<FilTransaction> FilTransaction::FromValue(
 std::string FilTransaction::GetMessageToSign() const {
   auto value = ToValue();
   value.RemoveKey("CID");
+  value.RemoveKey("maxfee");
+  value.SetIntKey("method", 0);
+  value.SetStringKey("params", "");
+
   std::string json;
   base::JSONWriter::Write(value, &json);
   std::string converted_json =
-      json::convert_string_value_to_int64("/gas_limit", json.c_str()).c_str();
+      json::convert_string_value_to_int64("/gaslimit", json.c_str()).c_str();
   if (converted_json.empty())
     return std::string();
   converted_json =
       json::convert_string_value_to_uint64("/nonce", converted_json.c_str())
           .c_str();
   return converted_json;
+}
+
+std::string FilTransaction::GetSignedTransaction(
+    const std::string& private_key_base64) const {
+  return std::string(
+      bls::fil_transaction_sign(GetMessageToSign(), private_key_base64)
+          .c_str());
 }
 
 }  // namespace brave_wallet

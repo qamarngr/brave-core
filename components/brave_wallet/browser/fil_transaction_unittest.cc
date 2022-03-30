@@ -5,7 +5,9 @@
 
 #include "brave/components/brave_wallet/browser/fil_transaction.h"
 
-#include "brave/components/bls/rs/src/lib.rs.h"
+#include "base/json/json_reader.h"
+#include "base/json/json_writer.h"
+
 #include "brave/components/brave_wallet/common/brave_wallet.mojom.h"
 #include "brave/components/brave_wallet/common/fil_address.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -136,14 +138,27 @@ TEST(FilTransactionUnitTest, GetMessageToSign) {
   auto transaction = FilTransaction::FromTxData(mojom::FilTxData::New(
       "1", "2", "3", "1", "5", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q",
       "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq", "6", ""));
-  EXPECT_EQ(transaction->GetMessageToSign(),
-            "{\"from\":\"t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq\",\"gas_fee_"
-            "cap\":\"3\",\"gas_limit\":1,\"gas_premium\":\"2\",\"max_fee\":"
-            "\"5\",\"method\":0,\"nonce\":1,\"params\":\"\",\"to\":"
+  std::string message_to_sign = transaction->GetMessageToSign();
+  EXPECT_EQ(message_to_sign,
+            "{\"from\":\"t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq\","
+            "\"gasfeecap\":\"3\",\"gaslimit\":1,\"gaspremium\":\"2\","
+            "\"method\":0,\"nonce\":1,\"params\":\"\",\"to\":"
             "\"t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q\",\"value\":\"6\"}");
-  bls::fil_transaction_sign(transaction->GetMessageToSign(),
-                            "8VcW07ADswS4BV2cxi5rnIadVsyTDDhY1NfDH19T8Uo=");
-  // EXPECT_EQ(result.message, "");
+
+  std::string signature = transaction->GetSignedTransaction(
+      "8VcW07ADswS4BV2cxi5rnIadVsyTDDhY1NfDH19T8Uo=");
+  auto signature_value = base::JSONReader::Read(signature);
+  EXPECT_TRUE(signature_value);
+  auto* message = signature_value->FindKey("message");
+  auto* signature_data = signature_value->FindStringPath("signature.data");
+  EXPECT_TRUE(message);
+  EXPECT_TRUE(signature_data);
+  auto message_as_value = base::JSONReader::Read(message_to_sign);
+  EXPECT_TRUE(message_as_value);
+  EXPECT_EQ(*message, *message_as_value);
+  EXPECT_EQ(*signature_data,
+            "SozNIZGNAvALCWtc38OUhO9wdFl82qESGhjnVVhI6CYNN0gP5qa+hZtyFh+"
+            "j9K0wIVVU10ZJPgaV0yM6a+xwKgA=");
   // EXPECT_EQ(result.signature, "");
 }
 
