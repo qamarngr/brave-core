@@ -1,14 +1,68 @@
 <style include="cr-shared-style settings-shared iron-flex">
+  .label.shields-primary-title {
+    font-weight: 700;
+    padding-top: 1em;
+    font-size: 1.05em;
+  }
+
+  .label.shields-secondary-title {
+    padding-bottom: 1em;
+  }
+
   .flex {
     align-self: center;
     flex: 1 1 auto;
   }
+
   .flex-container {
     display: flex;
     padding: 8px 1em;
   }
+
+  .filter-list-box {
+    height: 134px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+
+  .filter-list-box.expanded-true {
+    height: auto;
+    overflow: unset;
+  }
+
+  .filter-list-item {
+    margin-bottom: 5px;
+  }
 </style>
 
-<div id="adblock-section" class="flex-container">
-  Render
+<div id="adblock-section">
+  <div class="settings-box">
+    <div class="flex">
+      <div class="label shields-primary-title">Content filtering</div>
+      <div class="label secondary shields-secondary-title">
+        <p>Enable custom filters that block regional and language-specific trackers, and Annoyances.</p>
+      </div>
+        <cr-input
+          type="text"
+          placeholder="Filter lists"
+          min="1"
+          max="100"
+          value="{{filterListTitle}}"
+        >
+        </cr-input>
+        <div class$="filter-list-box expanded-[[hasListExpanded_]]">
+          <template is="dom-repeat" items="[[filterLists_]]"
+          filter="{{searchListBy_(filterListTitle)}}" observe="val" initial-count="10">
+            <div class="filter-list-item">
+              <cr-checkbox checked="{{item.enabled}}" on-change="onFilterListItemToggle_">
+                <div>[[item.title]]</div>
+              </cr-checkbox>
+            </div>
+          </template>
+        </div>
+        <template is="dom-if" if="[[!hasListExpanded_]]">
+          <cr-button on-click="handleShowList_">Show full list</cr-button>
+        </template>
+    </div>
+  </div>
 </div>

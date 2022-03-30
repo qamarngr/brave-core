@@ -87,7 +87,7 @@ class BraveShieldsPage extends BraveShieldsPageBase {
           this.adControlType_ = 'allow'
       }
     })
-
+    
     this.browserProxy_.getCookieControlType().then(value => {
       this.cookieControlType_ = value
     })

@@ -4,10 +4,10 @@
 # you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import("//third_party/closure_compiler/compile_js.gni")
+import("//tools/polymer/html_to_js.gni")
 import("//tools/polymer/polymer.gni")
 import("//ui/webui/resources/tools/js_modulizer.gni")
 import("../settings.gni")
-import("//tools/polymer/html_to_js.gni")
 
 # HTML Imports compatible compiles
 
@@ -32,21 +32,19 @@ js_type_check("closure_compile_module") {
 
 group("web_modules") {
   public_deps = [
-    ":default_brave_shields_browser_proxy_module",
+    ":modules",
     ":templatize",
   ]
 }
 
-js_modulizer("default_brave_shields_browser_proxy_module") {
-  input_files = [
-    "default_brave_shields_browser_proxy.js",
-  ]
+js_modulizer("modules") {
+  input_files = [ "default_brave_shields_browser_proxy.js" ]
   namespace_rewrites = settings_namespace_rewrites
 }
 
 html_to_js("templatize") {
   js_files = [
     "default_brave_shields_page.js",
-    "brave_adblock_subpage.js"
+    "brave_adblock_subpage.js",
   ]
 }

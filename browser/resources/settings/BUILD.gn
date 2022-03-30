@@ -125,6 +125,7 @@ preprocess_if_expr("preprocess") {
     "brave_reset_page/brave_reset_profile_dialog_behavior.js",
     "brave_routes.js",
     "brave_sync_page/brave_sync_browser_proxy.js",
+    "default_brave_shields_page/brave_adblock_browser_proxy.js",
   ]
 }
 
