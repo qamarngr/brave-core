@@ -11,6 +11,7 @@ rust_crate("rust_lib") {
   inputs = [
     "Cargo.toml",
     "src/lib.rs",
+    "src/signature.rs"
   ]
 }
 
