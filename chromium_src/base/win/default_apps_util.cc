@@ -12,5 +12,5 @@
   if (base::EqualsCaseInsensitiveASCII(protocol, BRAVE_IPNS))         \
     return base::StrCat({kSystemSettingsDefaultAppsPrefix, L"IPNS"});
 
-#include "src/chrome/installer/util/shell_util.cc"
+#include "src/base/win/default_apps_util.cc"
 #undef BRAVE_GET_TARGET_FOR_DEFAULT_APP_SETTINGS
