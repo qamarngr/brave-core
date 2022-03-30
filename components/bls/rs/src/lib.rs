@@ -1,10 +1,30 @@
 use bls_signatures::{PrivateKey, Serialize};
+pub mod signature;
+use crate::signature::{
+  UnsignedMessageAPI
+};
+use crate::signature::transaction_sign_raw;
 
 #[cxx::bridge(namespace = bls)]
 mod ffi {
     extern "Rust" {
         fn fil_private_key_public_key(private_key: &[u8; 32]) -> [u8; 48];
+        fn transaction_sign(
+          transaction: &str,
+          private_key: &str,
+      ) -> String;
     }
+}
+
+fn transaction_sign(
+  transaction: &str,
+  private_key_base64: &str,
+) -> String {
+  let message_user_api: UnsignedMessageAPI = serde_json::from_str(transaction).unwrap();
+  let private_key = PrivateKey::try_from(*private_key_base64).unwrap();
+  let raw_signature = transaction_sign_raw(&message_user_api, &private_key).unwrap();
+  println!("{:?}", raw_signature);
+  return "".to_string();
 }
 
 /// Generates a public key from the private key

@@ -175,8 +175,10 @@ absl::optional<FilTransaction> FilTransaction::FromValue(
 }
 
 std::string FilTransaction::GetMessageToSign() const {
+  auto value = ToValue();
+  value.RemoveKey("CID");
   std::string json;
-  base::JSONWriter::Write(ToValue(), &json);
+  base::JSONWriter::Write(value, &json);
   return json;
 }
 

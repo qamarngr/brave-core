@@ -136,8 +136,7 @@ TEST(FilTransactionUnitTest, GetMessageToSign) {
       "1", "2", "3", "1", "5", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q", "6",
       "cid"));
   EXPECT_EQ(transaction->GetMessageToSign(),
-            "{\"CID\":{\"/"
-            "\":\"cid\"},\"gas_fee_cap\":\"3\",\"gas_limit\":\"1\",\"gas_"
+            "{\"gas_fee_cap\":\"3\",\"gas_limit\":\"1\",\"gas_"
             "premium\":\"2\",\"max_fee\":\"5\",\"nonce\":\"1\",\"to\":"
             "\"t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q\",\"value\":\"6\"}");
 }
