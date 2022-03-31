@@ -4,6 +4,9 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "brave/components/brave_wallet/browser/fil_requests.h"
+#include "absl/types/optional.h"
+#include "base/json/json_reader.h"
+#include "base/logging.h"
 #include "brave/components/brave_wallet/browser/json_rpc_requests_helper.h"
 #include "third_party/jsoncpp/source/include/json/value.h"
 #include "third_party/jsoncpp/source/include/json/writer.h"
@@ -63,8 +66,29 @@ std::string fil_estimateGas(const std::string& from_address,
   return ssb.str();
 }
 
-std::string fil_sendTransaction(const std::string& signed_tx) {
-  return "";
+absl::optional<std::string> fil_sendTransaction(const std::string& signed_tx) {
+  base::JSONReader::ValueWithError parsed_tx =
+      base::JSONReader::ReadAndReturnValueWithError(signed_tx);
+  if (!parsed_tx.value || !parsed_tx.value->is_dict()) {
+    VLOG(1) << "Error parsing transaction JSON: " << parsed_tx.error_message;
+    return absl::nullopt;
+  }
+  auto* message_value = parsed_tx.value->FindKey("message");
+  auto* signature_value = parsed_tx.value->FindKey("signature");
+  if (!message_value || !signature_value)
+    return absl::nullopt;
+  base::Value params(base::Value::Type::LIST);
+  params.Append(message_value->Clone());
+  params.Append(signature_value->Clone());
+  // params.Append(cid.Clone());
+
+  base::Value dictionary(base::Value::Type::DICTIONARY);
+  dictionary.SetStringKey("jsonrpc", "2.0");
+  dictionary.SetStringKey("method", "Filecoin.MpoolPush");
+  dictionary.SetKey("params", std::move(params));
+  dictionary.SetIntKey("id", 1);
+
+  return GetJSON(dictionary);
 }
 
 }  // namespace brave_wallet

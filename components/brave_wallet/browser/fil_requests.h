@@ -25,7 +25,7 @@ std::string fil_estimateGas(const std::string& from_address,
                             uint64_t nonce,
                             const std::string& max_fee,
                             const std::string& value);
-std::string fil_sendTransaction(const std::string& signed_tx);
+absl::optional<std::string> fil_sendTransaction(const std::string& signed_tx);
 }  // namespace brave_wallet
 
 #endif  // BRAVE_COMPONENTS_BRAVE_WALLET_BROWSER_FIL_REQUESTS_H_

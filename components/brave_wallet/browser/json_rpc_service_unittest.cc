@@ -647,21 +647,18 @@ class JsonRpcServiceUnitTest : public testing::Test {
                          const std::string& expected_gas_premium,
                          const std::string& expected_gas_fee_cap,
                          int64_t expected_gas_limit,
-                         const std::string& expected_cid,
                          mojom::FilecoinProviderError expected_error) {
     bool callback_called = false;
     json_rpc_service_->GetFilEstimateGas(
         from, to, "", "", 0, 0, "", value,
         base::BindLambdaForTesting(
             [&](const std::string& gas_premium, const std::string& gas_fee_cap,
-                int64_t gas_limit, const std::string& cid,
-                mojom::FilecoinProviderError error,
+                int64_t gas_limit, mojom::FilecoinProviderError error,
                 const std::string& error_message) {
               callback_called = true;
               EXPECT_EQ(gas_premium, expected_gas_premium);
               EXPECT_EQ(gas_fee_cap, expected_gas_fee_cap);
               EXPECT_EQ(gas_limit, expected_gas_limit);
-              EXPECT_EQ(cid, expected_cid);
               EXPECT_EQ(error, expected_error);
               bool success =
                   mojom::FilecoinProviderError::kSuccess == expected_error;
@@ -2614,7 +2611,9 @@ TEST_F(JsonRpcServiceUnitTest, GetSolanaFeeForMessage) {
       }
     }
   )";
-  SetInterceptor("getFeeForMessage", "", json);
+  auto expected_network_url =
+      GetNetwork(mojom::kLocalhostChainId, mojom::CoinType::SOL);
+  SetInterceptor(expected_network_url, "getFeeForMessage", "", json);
   std::string base64_encoded_string;
   base::Base64Encode("test", &base64_encoded_string);
 
@@ -2630,7 +2629,7 @@ TEST_F(JsonRpcServiceUnitTest, GetSolanaFeeForMessage) {
       l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS));
 
   // value can be null for an account not on chain.
-  SetInterceptor("getFeeForMessage", "",
+  SetInterceptor(expected_network_url, "getFeeForMessage", "",
                  R"({
                       "jsonrpc":"2.0",
                       "result":{
@@ -2640,14 +2639,14 @@ TEST_F(JsonRpcServiceUnitTest, GetSolanaFeeForMessage) {
                              mojom::SolanaProviderError::kSuccess, "");
 
   // Response parsing error
-  SetInterceptor("getFeeForMessage", "",
+  SetInterceptor(expected_network_url, "getFeeForMessage", "",
                  R"({"jsonrpc":"2.0","id":1,"result":"0"})");
   TestGetSolanaFeeForMessage(
       base64_encoded_string, 0, mojom::SolanaProviderError::kParsingError,
       l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR));
 
   // JSON RPC error
-  SetInterceptor("getFeeForMessage", "",
+  SetInterceptor(expected_network_url, "getFeeForMessage", "",
                  R"({
                       "jsonrpc":"2.0","id":1,
                       "error":
@@ -2766,25 +2765,23 @@ TEST_F(JsonRpcServiceUnitTest, GetFilEstimateGas) {
   SetInterceptor(GetNetwork(mojom::kLocalhostChainId, mojom::CoinType::FIL),
                  "Filecoin.GasEstimateMessageGas", "", response);
 
-  GetFilEstimateGas(
-      "t1tquwkjo6qvweah2g2yikewr7y5dyjds42pnrn3a",
-      "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq", "1000000000000000000",
-      "100466", "101520", 2187060,
-      "bafy2bzacebefvj6623fkmfwazpvg7qxgomhicefeb6tunc7wbvd2ee4uppfkw",
-      mojom::FilecoinProviderError::kSuccess);
+  GetFilEstimateGas("t1tquwkjo6qvweah2g2yikewr7y5dyjds42pnrn3a",
+                    "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq",
+                    "1000000000000000000", "100466", "101520", 2187060,
+                    mojom::FilecoinProviderError::kSuccess);
 
   GetFilEstimateGas("", "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq",
-                    "1000000000000000000", "", "", 0, "",
+                    "1000000000000000000", "", "", 0,
                     mojom::FilecoinProviderError::kInvalidParams);
   GetFilEstimateGas("t1tquwkjo6qvweah2g2yikewr7y5dyjds42pnrn3a", "",
-                    "1000000000000000000", "", "", 0, "",
+                    "1000000000000000000", "", "", 0,
                     mojom::FilecoinProviderError::kInvalidParams);
 
   SetInterceptor(GetNetwork(mojom::kLocalhostChainId, mojom::CoinType::FIL),
                  "Filecoin.GasEstimateMessageGas", "", "");
   GetFilEstimateGas("t1tquwkjo6qvweah2g2yikewr7y5dyjds42pnrn3a",
                     "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq",
-                    "1000000000000000000", "", "", 0, "",
+                    "1000000000000000000", "", "", 0,
                     mojom::FilecoinProviderError::kParsingError);
 }
 

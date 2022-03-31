@@ -1240,7 +1240,7 @@ void JsonRpcService::GetFilEstimateGas(const std::string& from_address,
                                        GetFilEstimateGasCallback callback) {
   if (from_address.empty() || to_address.empty()) {
     std::move(callback).Run(
-        "", "", 0, "", mojom::FilecoinProviderError::kInvalidParams,
+        "", "", 0, mojom::FilecoinProviderError::kInvalidParams,
         l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS));
     return;
   }
@@ -1263,7 +1263,7 @@ void JsonRpcService::OnGetFilEstimateGas(
     std::string error_message;
     ParseErrorResult<mojom::FilecoinProviderError>(body, &error,
                                                    &error_message);
-    std::move(callback).Run("", "", 0, "", error, error_message);
+    std::move(callback).Run("", "", 0, error, error_message);
     return;
   }
 
@@ -1277,11 +1277,11 @@ void JsonRpcService::OnGetFilEstimateGas(
     std::string error_message;
     ParseErrorResult<mojom::FilecoinProviderError>(body, &error,
                                                    &error_message);
-    std::move(callback).Run("", "", gas_limit, "", error, error_message);
+    std::move(callback).Run("", "", gas_limit, error, error_message);
     return;
   }
 
-  std::move(callback).Run(gas_premium, gas_fee_cap, gas_limit, cid,
+  std::move(callback).Run(gas_premium, gas_fee_cap, gas_limit,
                           mojom::FilecoinProviderError::kSuccess, "");
 }
 
@@ -1761,13 +1761,19 @@ void JsonRpcService::SendFilecoinTransaction(
     std::move(callback).Run(
         "", mojom::FilecoinProviderError::kInternalError,
         l10n_util::GetStringUTF8(IDS_WALLET_INTERNAL_ERROR));
+    return;
   }
-
+  auto request = fil_sendTransaction(signed_tx);
+  if (!request) {
+    std::move(callback).Run(
+        "", mojom::FilecoinProviderError::kInternalError,
+        l10n_util::GetStringUTF8(IDS_WALLET_INTERNAL_ERROR));
+    return;
+  }
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnSendFilecoinTransaction,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
-  RequestInternal(fil_sendTransaction(signed_tx), true,
-                  network_urls_[mojom::CoinType::FIL],
+  RequestInternal(request.value(), true, network_urls_[mojom::CoinType::FIL],
                   std::move(internal_callback));
 }
 
@@ -1776,6 +1782,7 @@ void JsonRpcService::OnSendFilecoinTransaction(
     const int status,
     const std::string& body,
     const base::flat_map<std::string, std::string>& headers) {
+  DLOG(INFO) << "body:" << body;
   if (status < 200 || status > 299) {
     std::move(callback).Run(
         "", mojom::FilecoinProviderError::kInternalError,
@@ -1783,8 +1790,8 @@ void JsonRpcService::OnSendFilecoinTransaction(
     return;
   }
 
-  std::string transaction_id;
-  if (!ParseSendFilecoinTransaction(body, &transaction_id)) {
+  std::string cid;
+  if (!ParseSendFilecoinTransaction(body, &cid)) {
     mojom::FilecoinProviderError error;
     std::string error_message;
     ParseErrorResult<mojom::FilecoinProviderError>(body, &error,
@@ -1793,8 +1800,7 @@ void JsonRpcService::OnSendFilecoinTransaction(
     return;
   }
 
-  std::move(callback).Run(transaction_id,
-                          mojom::FilecoinProviderError::kSuccess, "");
+  std::move(callback).Run(cid, mojom::FilecoinProviderError::kSuccess, "");
 }
 
 void JsonRpcService::SendSolanaTransaction(
