@@ -7,9 +7,14 @@ static_library("brave_search_conversion") {
   sources = [
     "features.cc",
     "features.h",
+    "tab_helper.cc",
+    "tab_helper.h",
   ]
 
-  deps = [ "//base" ]
+  deps = [
+    "//base",
+    "//content/public/browser",
+  ]
 }
 
 source_set("unit_tests") {
