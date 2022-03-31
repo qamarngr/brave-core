@@ -37,14 +37,12 @@ FilTransaction::FilTransaction(absl::optional<uint64_t> nonce,
                                const std::string& max_fee,
                                const FilAddress& to,
                                const FilAddress& from,
-                               const std::string& value,
-                               const std::string& cid)
+                               const std::string& value)
     : nonce_(nonce),
       gas_premium_(gas_premium),
       gas_fee_cap_(gas_fee_cap),
       gas_limit_(gas_limit),
       max_fee_(max_fee),
-      cid_(cid),
       to_(to),
       from_(from),
       value_(value) {}
@@ -55,7 +53,7 @@ bool FilTransaction::IsEqual(const FilTransaction& tx) const {
   return nonce_ == tx.nonce_ && gas_premium_ == tx.gas_premium_ &&
          gas_fee_cap_ == tx.gas_fee_cap_ && gas_limit_ == tx.gas_limit_ &&
          max_fee_ == tx.max_fee_ && to_ == tx.to_ && from_ == tx.from_ &&
-         value_ == tx.value_ && cid_ == tx.cid_;
+         value_ == tx.value_;
 }
 
 bool FilTransaction::operator==(const FilTransaction& other) const {
@@ -159,6 +157,11 @@ absl::optional<FilTransaction> FilTransaction::FromValue(
   if (!gas_limit || !base::StringToInt64(*gas_limit, &tx.gas_limit_))
     return absl::nullopt;
 
+  const std::string* from = value.FindStringKey("from");
+  if (!from)
+    return absl::nullopt;
+  tx.from_ = FilAddress::FromAddress(*from);
+
   const std::string* to = value.FindStringKey("to");
   if (!to)
     return absl::nullopt;
@@ -174,7 +177,6 @@ absl::optional<FilTransaction> FilTransaction::FromValue(
 
 std::string FilTransaction::GetMessageToSign() const {
   auto value = ToValue();
-  value.RemoveKey("CID");
   value.RemoveKey("maxfee");
   value.SetIntKey("method", 0);
   value.SetStringKey("params", "");
@@ -199,10 +201,10 @@ std::string FilTransaction::GetSignedTransaction(
 }
 
 mojom::FilTxDataPtr FilTransaction::ToFilTxData() const {
-  return mojom::FilTxData::New(nonce() ? base::NumberToString(*nonce()) : "",
-                               gas_premium(), gas_fee_cap(),
-                               base::NumberToString(gas_limit()), max_fee(),
-                               to().EncodeAsString(), value());
+  return mojom::FilTxData::New(
+      nonce() ? base::NumberToString(*nonce()) : "", gas_premium(),
+      gas_fee_cap(), base::NumberToString(gas_limit()), max_fee(),
+      to().EncodeAsString(), from().EncodeAsString(), value());
 }
 
 }  // namespace brave_wallet

@@ -2649,7 +2649,6 @@ TEST_F(JsonRpcServiceUnitTest, GetSolanaFeeForMessage) {
       }
     }
   )";
-
   auto expected_network_url =
       GetNetwork(mojom::kLocalhostChainId, mojom::CoinType::SOL);
   SetInterceptor(expected_network_url, "getFeeForMessage", "", json);

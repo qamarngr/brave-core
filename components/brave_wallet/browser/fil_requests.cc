@@ -7,6 +7,8 @@
 
 #include <utility>
 
+#include "absl/types/optional.h"
+#include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
 #include "brave/components/brave_wallet/browser/json_rpc_requests_helper.h"
 #include "brave/components/json/rs/src/lib.rs.h"
@@ -85,8 +87,31 @@ std::string getStateSearchMsgLimited(const std::string& cid, uint64_t period) {
           .c_str());
   return result;
 }
-std::string getSendTransaction(const std::string& signed_tx) {
-  return "";
+
+absl::optional<std::string> getSendTransaction(const std::string& signed_tx) {
+  base::JSONReader::ValueWithError parsed_tx =
+      base::JSONReader::ReadAndReturnValueWithError(signed_tx);
+  if (!parsed_tx.value || !parsed_tx.value->is_dict()) {
+    return absl::nullopt;
+  }
+  auto* message_value = parsed_tx.value->FindKey("message");
+  auto* signature_value = parsed_tx.value->FindKey("signature");
+  if (!message_value || !signature_value)
+    return absl::nullopt;
+  base::Value command(base::Value::Type::DICTIONARY);
+  command.SetKey("Message", message_value->Clone());
+  command.SetKey("Signature", signature_value->Clone());
+  base::Value params(base::Value::Type::LIST);
+  params.Append(std::move(command));
+  // params.Append(cid.Clone());
+
+  base::Value dictionary(base::Value::Type::DICTIONARY);
+  dictionary.SetStringKey("jsonrpc", "2.0");
+  dictionary.SetStringKey("method", "Filecoin.MpoolPush");
+  dictionary.SetKey("params", std::move(params));
+  dictionary.SetIntKey("id", 1);
+
+  return GetJSON(dictionary);
 }
 
 }  // namespace fil
