@@ -1,0 +1,25 @@
+# Copyright (c) 2022 The Brave Authors. All rights reserved.
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this file,
+# You can obtain one at http://mozilla.org/MPL/2.0/.
+
+static_library("brave_search_conversion") {
+  sources = [
+    "features.cc",
+    "features.h",
+  ]
+
+  deps = [ "//base" ]
+}
+
+source_set("unit_tests") {
+  testonly = true
+
+  sources = [ "brave_search_conversion_unittest.cc" ]
+
+  deps = [
+    ":brave_search_conversion",
+    "//base",
+    "//testing/gtest",
+  ]
+}
