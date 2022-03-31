@@ -67,7 +67,6 @@ class FilTransaction {
   std::string gas_fee_cap_;
   int64_t gas_limit_ = 0;
   std::string max_fee_;
-  std::string cid_;
   FilAddress to_;
   FilAddress from_;
   std::string value_;
@@ -82,8 +81,7 @@ class FilTransaction {
                  const std::string& max_fee,
                  const FilAddress& to,
                  const FilAddress& from,
-                 const std::string& value,
-                 const std::string& cid);
+                 const std::string& value);
 };
 
 }  // namespace brave_wallet
