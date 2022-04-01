@@ -70,7 +70,7 @@ public class BraveRewardsDebugPreferences extends BravePreferenceFragment {
                 }
             }
         };
-        AlertDialog.Builder alertDialog = new AlertDialog.Builder(getActivity(), R.style.Theme_Chromium_AlertDialog)
+        AlertDialog.Builder alertDialog = new AlertDialog.Builder(getActivity(), R.style.ThemeOverlay_BrowserUI_AlertDialog)
                 .setMessage(
                         "This operation requires restart. Would you like to restart application and start operation?")
                 .setPositiveButton(R.string.ok, onClickListener).setNegativeButton(R.string.cancel, onClickListener);
