@@ -91,6 +91,46 @@ bool GetTransactionInfoFromData(const std::string& data,
     *tx_args = {fill_path,
                 "",  // maker asset is ETH, amount is txn value
                 tx_args->at(1)};
+  } else if (selector == "0x803ba26d" || selector == "0x6af479b2") {
+    *tx_type = mojom::TransactionType::ETHSwap;
+
+    // Function: 0x803ba26d
+    // sellTokenForEthToUniswapV3(bytes encodedPath,
+    //                            uint256 sellAmount,
+    //                            uint256 minBuyAmount,
+    //                            address recipient)
+    //
+    // Ref:
+    // https://github.com/0xProject/protocol/blob/b46eeadc64485288add5940a210e1a7d0bcb5481/contracts/zero-ex/contracts/src/features/interfaces/IUniswapV3Feature.sol#L43-L56
+    //
+    //
+    // Function: 0x6af479b2
+    // sellTokenForTokenToUniswapV3(bytes encodedPath,
+    //                              uint256 sellAmount,
+    //                              uint256 minBuyAmount,
+    //                              address recipient)
+    //
+    // Ref:
+    // https://github.com/0xProject/protocol/blob/b46eeadc64485288add5940a210e1a7d0bcb5481/contracts/zero-ex/contracts/src/features/interfaces/IUniswapV3Feature.sol#L58-L71
+    if (!brave_wallet::ABIDecode({"bytes", "uint256", "uint256", "address"},
+                                 calldata, tx_params, tx_args))
+      return false;
+
+    std::vector<std::string> decoded_path;
+    if (!brave_wallet::UniswapEncodedPathDecode(tx_args->at(0), &decoded_path))
+      return false;
+    std::string fill_path = "0x";
+    for (const auto& path : decoded_path) {
+      fill_path += path.substr(2);
+    }
+
+    // Populate ETHSwap tx_params and tx_args.
+    *tx_params = {
+        "bytes",    // fill path
+        "uint256",  // maker amount
+        "uint256"   // taker amount
+    };
+    *tx_args = {fill_path, tx_args->at(1), tx_args->at(2)};
   } else if (selector == "0x415565b0") {
     *tx_type = mojom::TransactionType::ETHSwap;
 

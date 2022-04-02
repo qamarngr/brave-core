@@ -188,12 +188,12 @@ TEST(EthDataParser, GetTransactionInfoFromDataOther) {
       GetTransactionInfoFromData("hello", &tx_type, &tx_params, &tx_args));
 }
 
-TEST(EthDataParser, GetTransactionInfoFromDataETHSwapUniswapV3) {
+TEST(EthDataParser, GetTransactionInfoFromDataSellEthForTokenToUniswapV3) {
   mojom::TransactionType tx_type;
   std::vector<std::string> tx_params;
   std::vector<std::string> tx_args;
 
-  // Function:
+  // TXN: WETH → STG
   // sellEthForTokenToUniswapV3(bytes encodedPath,
   //                            uint256 minBuyAmount,
   //                            address recipient)
@@ -207,8 +207,10 @@ TEST(EthDataParser, GetTransactionInfoFromDataETHSwapUniswapV3) {
       /***************************** TAIL *****************************/
       // calldata reference position for encodedPath
       "000000000000000000000000000000000000000000000000000000000000002b"
-      "c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2002710af5191b0de278c7286"
-      "d6c7cc6ab6bb8a73ba2cd6000000000000000000000000000000000000000000"
+      "c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"    // WETH
+      "002710"                                      // POOL FEE
+      "af5191b0de278c7286d6c7cc6ab6bb8a73ba2cd6"    // STG
+      "000000000000000000000000000000000000000000"  // recipient address
 
       // extraneous tail segment to be ignored
       "869584cd0000000000000000000000003ce37278de6388532c3949ce4e886f36"
@@ -231,12 +233,114 @@ TEST(EthDataParser, GetTransactionInfoFromDataETHSwapUniswapV3) {
   EXPECT_EQ(tx_args[2], "0x30c1a39b13e25f498");
 }
 
-TEST(EthDataParser, GetTransactionInfoFromDataETHSwapTransformERC20) {
+TEST(EthDataParser, GetTransactionInfoFromDataSellTokenForEthToUniswapV3) {
   mojom::TransactionType tx_type;
   std::vector<std::string> tx_params;
   std::vector<std::string> tx_args;
 
-  // Function:
+  // TXN: RSS3 → USDC → WETH
+  // sellTokenForEthToUniswapV3(bytes encodedPath,
+  //                            uint256 sellAmount,
+  //                            uint256 minBuyAmount,
+  //                            address recipient)
+  ASSERT_TRUE(GetTransactionInfoFromData(
+      "0x803ba26d"  // function selector
+      /*********************** HEAD (32x4 bytes) **********************/
+      "0000000000000000000000000000000000000000000000000000000000000080"
+      "0000000000000000000000000000000000000000000000821ab0d44149800000"
+      "0000000000000000000000000000000000000000000000000248b3366b6ffd46"
+      "0000000000000000000000000000000000000000000000000000000000000000"
+
+      /***************************** TAIL *****************************/
+      // calldata reference position for encodedPath
+      "0000000000000000000000000000000000000000000000000000000000000042"
+      "c98d64da73a6616c42117b582e832812e7b8d57f"  // RSS3
+      "000bb8"                                    // POOL FEE
+      "a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"  // USDC
+      "0001f4"                                    // POOL FEE
+      "c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"  // WETH
+
+      // extraneous tail segment to be ignored
+      "0000000000000000000000000000000000000000000000000000000000008695"
+      "84cd00000000000000000000000086003b044f70dac0abc80ac8957305b63708"
+      "93ed0000000000000000000000000000000000000000000000c42194bea56247"
+      "eafe",
+      &tx_type, &tx_params, &tx_args));
+
+  EXPECT_EQ(tx_type, mojom::TransactionType::ETHSwap);
+
+  ASSERT_EQ(tx_params.size(), 3UL);
+  EXPECT_EQ(tx_params[0], "bytes");
+  EXPECT_EQ(tx_params[1], "uint256");
+  EXPECT_EQ(tx_params[2], "uint256");
+
+  ASSERT_EQ(tx_args.size(), 3UL);
+  EXPECT_EQ(tx_args[0],
+            "0xc98d64da73a6616c42117b582e832812e7b8d57f"  // RSS3
+            "a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"    // USDC
+            "c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"    // WETH
+  );
+  EXPECT_EQ(tx_args[1], "0x821ab0d44149800000");
+  EXPECT_EQ(tx_args[2], "0x248b3366b6ffd46");
+}
+
+TEST(EthDataParser, GetTransactionInfoFromDataSellTokenForTokenToUniswapV3) {
+  mojom::TransactionType tx_type;
+  std::vector<std::string> tx_params;
+  std::vector<std::string> tx_args;
+
+  // TXN: COW → WETH → USDC
+  // sellTokenForTokenToUniswapV3(bytes encodedPath,
+  //                              uint256 sellAmount,
+  //                              uint256 minBuyAmount,
+  //                              address recipient)
+  ASSERT_TRUE(GetTransactionInfoFromData(
+      "0x6af479b2"  // function selector
+
+      /*********************** HEAD (32x4 bytes) **********************/
+      "0000000000000000000000000000000000000000000000000000000000000080"
+      "00000000000000000000000000000000000000000000004d12b6295c69ddebd5"
+      "000000000000000000000000000000000000000000000000000000003b9aca00"
+      "0000000000000000000000000000000000000000000000000000000000000000"
+
+      /***************************** TAIL *****************************/
+      // calldata reference position for encodedPath
+      "0000000000000000000000000000000000000000000000000000000000000042"
+      "def1ca1fb7fbcdc777520aa7f396b4e015f497ab"  // COW
+      "002710"                                    // POOL FEE
+      "c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"  // WETH
+      "0001f4"                                    // POOL FEE
+      "a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"  // USDC
+
+      // extraneous tail segment to be ignored
+      "000000000000000000000000000000000000000000000000000000000000869584cd0000"
+      "0000000000000000000086003b044f70dac0abc80ac8957305b6370893ed000000000000"
+      "0000000000000000000000000000000000495d35e8bf6247f2f1",
+      &tx_type, &tx_params, &tx_args));
+
+  EXPECT_EQ(tx_type, mojom::TransactionType::ETHSwap);
+
+  ASSERT_EQ(tx_params.size(), 3UL);
+  EXPECT_EQ(tx_params[0], "bytes");
+  EXPECT_EQ(tx_params[1], "uint256");
+  EXPECT_EQ(tx_params[2], "uint256");
+
+  ASSERT_EQ(tx_args.size(), 3UL);
+  EXPECT_EQ(tx_args[0],
+            "0xdef1ca1fb7fbcdc777520aa7f396b4e015f497ab"  // COW
+            "c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"    // WETH
+            "a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"    // USDC
+  );
+  EXPECT_EQ(tx_args[1], "0x4d12b6295c69ddebd5");
+  EXPECT_EQ(tx_args[2], "0x3b9aca00");
+}
+
+TEST(EthDataParser, GetTransactionInfoFromDataTransformERC20) {
+  mojom::TransactionType tx_type;
+  std::vector<std::string> tx_params;
+  std::vector<std::string> tx_args;
+
+  // TXN: USDT → ETH
   // transformERC20(address inputToken,
   //                address outputToken,
   //                uint256 inputTokenAmount,
