@@ -35,4 +35,52 @@ TEST(EthDataParser, ABIDecodeAddressInValidHex) {
                 &tx_params, &tx_args));
 }
 
+TEST(EthDataParser, UniswapEncodedPathDecodeValid) {
+  // Single-hop swap: WETH → STG
+  std::vector<std::string> path;
+  ASSERT_TRUE(UniswapEncodedPathDecode(
+      "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"  // WETH
+      "002710"                                      // POOL FEE (10000)
+      "af5191b0de278c7286d6c7cc6ab6bb8a73ba2cd6",   // STG
+      &path));
+  ASSERT_EQ(path.size(), 2UL);
+  ASSERT_EQ(path[0], "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
+  ASSERT_EQ(path[1], "0xaf5191b0de278c7286d6c7cc6ab6bb8a73ba2cd6");
+
+  // Multi-hop swap: RSS3 → USDC → WETH
+  path = {};
+  ASSERT_TRUE(UniswapEncodedPathDecode(
+      "0xc98d64da73a6616c42117b582e832812e7b8d57f"  // RSS3
+      "000bb8"                                      // POOL FEE (3000)
+      "a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"    // USDC
+      "0001f4"                                      // POOL FEE (500)
+      "c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",   // WETH
+      &path));
+  ASSERT_EQ(path.size(), 3UL);
+  ASSERT_EQ(path[0], "0xc98d64da73a6616c42117b582e832812e7b8d57f");
+  ASSERT_EQ(path[1], "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48");
+  ASSERT_EQ(path[2], "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
+}
+
+TEST(EthDataParser, UniswapEncodedPathDecodeInvalid) {
+  // Missing source hop.
+  std::vector<std::string> path;
+  ASSERT_FALSE(UniswapEncodedPathDecode(
+      "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"  // WETH
+      "002710",                                     // POOL FEE
+      &path));
+
+  // Missing destination hop.
+  ASSERT_FALSE(UniswapEncodedPathDecode(
+      "0x002710"                                   // POOL FEE
+      "af5191b0de278c7286d6c7cc6ab6bb8a73ba2cd6",  // STG
+      &path));
+
+  // Missing POOL FEE
+  ASSERT_FALSE(UniswapEncodedPathDecode(
+      "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"  // WETH
+      "af5191b0de278c7286d6c7cc6ab6bb8a73ba2cd6",   // STG
+      &path));
+}
+
 }  // namespace brave_wallet

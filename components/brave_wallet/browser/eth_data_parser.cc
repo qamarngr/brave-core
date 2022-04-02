@@ -39,81 +39,83 @@ bool GetTransactionInfoFromData(const std::string& data,
   }
 
   std::string selector = base::ToLowerASCII(data.substr(0, 10));
-  std::string left_over_data = data.substr(10);
+  std::string calldata = data.substr(10);
   if (selector == "0xa9059cbb") {
     *tx_type = mojom::TransactionType::ERC20Transfer;
-    if (!brave_wallet::ABIDecode({"address", "uint256"}, left_over_data,
-                                 tx_params, tx_args))
+    if (!brave_wallet::ABIDecode({"address", "uint256"}, calldata, tx_params,
+                                 tx_args))
       return false;
   } else if (selector == "0x095ea7b3") {
     *tx_type = mojom::TransactionType::ERC20Approve;
-    if (!brave_wallet::ABIDecode({"address", "uint256"}, left_over_data,
-                                 tx_params, tx_args))
+    if (!brave_wallet::ABIDecode({"address", "uint256"}, calldata, tx_params,
+                                 tx_args))
       return false;
   } else if (selector == "0x23b872dd") {
     *tx_type = mojom::TransactionType::ERC721TransferFrom;
-    if (!brave_wallet::ABIDecode({"address", "address", "uint256"},
-                                 left_over_data, tx_params, tx_args))
+    if (!brave_wallet::ABIDecode({"address", "address", "uint256"}, calldata,
+                                 tx_params, tx_args))
       return false;
   } else if (selector == "0x42842e0e") {
     *tx_type = mojom::TransactionType::ERC721SafeTransferFrom;
-    if (!brave_wallet::ABIDecode({"address", "address", "uint256"},
-                                 left_over_data, tx_params, tx_args))
+    if (!brave_wallet::ABIDecode({"address", "address", "uint256"}, calldata,
+                                 tx_params, tx_args))
       return false;
   } else if (selector == "0x3598d8ab") {
+    *tx_type = mojom::TransactionType::ETHSwap;
+
     // Function:
     // sellEthForTokenToUniswapV3(bytes encodedPath,
     //                            uint256 minBuyAmount,
     //                            address recipient)
-    *tx_type = mojom::TransactionType::ETHSwap;
-    if (!brave_wallet::ABIDecode({"bytes", "uint256", "address"},
-                                 left_over_data, tx_params, tx_args))
+    //
+    // Ref:
+    // https://github.com/0xProject/protocol/blob/b46eeadc64485288add5940a210e1a7d0bcb5481/contracts/zero-ex/contracts/src/features/interfaces/IUniswapV3Feature.sol#L29-L41
+    if (!brave_wallet::ABIDecode({"bytes", "uint256", "address"}, calldata,
+                                 tx_params, tx_args))
       return false;
 
+    std::vector<std::string> decoded_path;
+    if (!brave_wallet::UniswapEncodedPathDecode(tx_args->at(0), &decoded_path))
+      return false;
+    std::string fill_path = "0x";
+    for (const auto& path : decoded_path) {
+      fill_path += path.substr(2);
+    }
+
+    // Populate ETHSwap tx_params and tx_args.
     *tx_params = {
         "bytes",    // fill path
         "uint256",  // maker amount
         "uint256"   // taker amount
     };
-
-    // encodedPath is formatted in the following manner:
-    //   <address><POOL_FEE><address>...
-    // where, POOL FEE is associated with the token address that follows.
-    //
-    // We remove the POOL_FEE from the bytearray since it is not useful for
-    // the clients.
-    std::string original_fill_path = (*tx_args)[0].substr(2);
-    std::string fill_path = "0x";
-    while (true) {
-      fill_path += original_fill_path.substr(0, 40);
-      if (original_fill_path.substr(40).length() == 0)
-        break;
-      original_fill_path = original_fill_path.substr(40 + 3 * 2);
-    }
-
     *tx_args = {fill_path,
                 "",  // maker asset is ETH, amount is txn value
-                (*tx_args)[1]};
+                tx_args->at(1)};
   } else if (selector == "0x415565b0") {
+    *tx_type = mojom::TransactionType::ETHSwap;
+
     // Function:
     // transformERC20(address inputToken,
     //                address outputToken,
     //                uint256 inputTokenAmount,
     //                uint256 minOutputTokenAmount,
     //                (uint32,bytes)[] transformations)
-    *tx_type = mojom::TransactionType::ETHSwap;
+    //
+    // Ref:
+    // https://github.com/0xProject/protocol/blob/b46eeadc64485288add5940a210e1a7d0bcb5481/contracts/zero-ex/contracts/src/features/interfaces/ITransformERC20Feature.sol#L113-L134
     if (!brave_wallet::ABIDecode(
             {"address", "address", "uint256", "uint256", "(uint32,bytes)[]"},
-            left_over_data, tx_params, tx_args))
+            calldata, tx_params, tx_args))
       return false;
 
+    // Populate ETHSwap tx_params and tx_args.
     *tx_params = {
         "bytes",    // fill path
         "uint256",  // maker amount
         "uint256"   // taker amount
     };
-    std::string fill_path = (*tx_args)[0] + (*tx_args)[1].substr(2);
-    *tx_args = {fill_path, (*tx_args)[2], (*tx_args)[3]};
+    std::string fill_path = tx_args->at(0) + tx_args->at(1).substr(2);
+    *tx_args = {fill_path, tx_args->at(2), tx_args->at(3)};
   } else {
     *tx_type = mojom::TransactionType::Other;
   }

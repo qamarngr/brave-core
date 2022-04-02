@@ -166,6 +166,53 @@ bool ABIDecodeInternal(const std::vector<std::string> types,
 
 }  // namespace
 
+bool UniswapEncodedPathDecode(const std::string& encodedPath,
+                              std::vector<std::string>* path) {
+  // Parse a Uniswap-encoded path and return a vector of addresses representing
+  // each hop involved in the swap.
+  //
+  // Single-hop swap: Token1 → Token2
+  // Multi-hop swap: Token1 → Token2 → WETH → Token3
+  //
+  // Each encoded hop contains a 3-byte pool fee, which is associated with the
+  // address that follows. It is excluded from the result of this function.
+  //
+  // ┌──────────┬──────────┬──────────┬─────┐
+  // │ address  │ pool fee │ address  │     │
+  // │          │          │          │ ... │
+  // │ 20 bytes │ 3 bytes  │ 20 bytes │     │
+  // └──────────┴──────────┴──────────┴─────┘
+  std::string data = encodedPath.substr(2);
+
+  // Parse first hop address.
+  if (data.length() < 40)
+    return false;
+  path->push_back("0x" + data.substr(0, 40));
+  data = data.substr(40);
+
+  while (true) {
+    if (data.length() == 0)
+      break;
+
+    // Parse the pool fee, and ignore.
+    if (data.length() < 6)
+      return false;
+    data = data.substr(6);
+
+    // Parse next hop.
+    if (data.length() < 40)
+      return false;
+    path->push_back("0x" + data.substr(0, 40));
+    data = data.substr(40);
+  }
+
+  // Require a minimum of 2 addresses for a single-hop swap.
+  if (path->size() < 2)
+    return false;
+
+  return true;
+}
+
 bool ABIDecode(const std::vector<std::string> types,
                const std::string& data,
                std::vector<std::string>* tx_params,
