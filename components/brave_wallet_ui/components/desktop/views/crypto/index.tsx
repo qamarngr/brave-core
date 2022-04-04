@@ -20,7 +20,7 @@ import { PortfolioView, AccountsView } from '../'
 import {
   HardwareWalletConnectOpts
 } from '../../popup-modals/add-account-modal/hardware-wallet-connect/types'
-import MarketView from '../market'
+import { MarketView } from '../market'
 
 interface ParamsType {
   category?: TopTabNavTypes

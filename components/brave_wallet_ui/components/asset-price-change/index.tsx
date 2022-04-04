@@ -7,7 +7,7 @@ export interface Props {
   priceChangePercentage: string
 }
 
-const AssetPriceChange = (props: Props) => {
+export const AssetPriceChange = (props: Props) => {
   const { isDown, priceChangePercentage } = props
 
   return (
@@ -19,5 +19,3 @@ const AssetPriceChange = (props: Props) => {
     </StyledWrapper>
   )
 }
-
-export default AssetPriceChange

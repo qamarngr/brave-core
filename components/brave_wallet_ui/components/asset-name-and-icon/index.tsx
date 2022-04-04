@@ -8,7 +8,7 @@ export interface Props {
   assetLogo: string
 }
 
-const AssetNameAndIcon = (props: Props) => {
+export const AssetNameAndIcon = (props: Props) => {
   const { assetLogo, assetName, symbol } = props
 
   return (
@@ -21,5 +21,3 @@ const AssetNameAndIcon = (props: Props) => {
     </StyledWrapper>
   )
 }
-
-export default AssetNameAndIcon

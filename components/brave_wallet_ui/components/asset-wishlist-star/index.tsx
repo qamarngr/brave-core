@@ -7,7 +7,7 @@ export interface Props {
   onCheck?: (status: boolean) => void
 }
 
-const AssetWishlistStar = (props: Props) => {
+export const AssetWishlistStar = (props: Props) => {
   const { active, onCheck } = props
 
   const onClick = () => {
@@ -18,11 +18,9 @@ const AssetWishlistStar = (props: Props) => {
   return (
     <StyledWrapper>
       <Star
-      active={active}
-      onClick={onClick}
-    />
+        active={active}
+        onClick={onClick}
+      />
     </StyledWrapper>
   )
 }
-
-export default AssetWishlistStar

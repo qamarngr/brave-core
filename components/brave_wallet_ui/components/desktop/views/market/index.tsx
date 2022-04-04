@@ -13,8 +13,8 @@ import {
 import { useMarketDataManagement } from '../../../../common/hooks/market-data-management'
 import { marketDataTableHeaders } from '../../../../options/market-data-headers'
 import { AssetFilterOption, BraveWallet, MarketDataTableColumnTypes, SortOrder } from '../../../../constants/types'
-import MarketDataTable from '../../../../components/market-datatable'
-import { debounce } from '../../../../../common/debounce'
+import { MarketDataTable } from '../../../market-datatable'
+import { debounce } from '$web-common/debounce'
 
 export interface Props {
   isLoadingCoinMarketData: boolean
@@ -23,7 +23,11 @@ export interface Props {
   tradableAssets: BraveWallet.BlockchainToken[]
 }
 
-const MarketView = (props: Props) => {
+const defaultCurrency = 'usd'
+const assetsRequestLimit = 250
+const assetsPerPage = 10
+
+export const MarketView = (props: Props) => {
   const { isLoadingCoinMarketData, coinMarkets, tradableAssets, onFetchCoinMarkets } = props
   const [coinsMarketData, setCoinsMarketData] = React.useState<BraveWallet.CoinMarket[]>([])
   const [tableHeaders, setTableHeaders] = React.useState(marketDataTableHeaders)
@@ -34,9 +38,6 @@ const MarketView = (props: Props) => {
   const [currentPage, setCurrentPage] = React.useState<number>(1)
   const [searchTerm, setSearchTerm] = React.useState('')
   const [moreDataAvailable, setMoreDataAvailable] = React.useState<boolean>(false)
-  const defaultCurrency = 'usd'
-  const assetsRequestLimit = 250
-  const assetsPerPage = 20
 
   const search = (query: string) => {
     const filtered = filterCoinMarkets(coinMarkets, currentFilter)
@@ -69,8 +70,7 @@ const MarketView = (props: Props) => {
     if (filter === 'all') {
       return coins
     } else if (filter === 'tradable') {
-      const filtered = coins.filter(asset => tradableAssetsSymbols.includes(asset.symbol.toLowerCase()))
-      return filtered
+      return coins.filter(asset => tradableAssetsSymbols.includes(asset.symbol.toLowerCase()))
     }
 
     return []
@@ -85,7 +85,7 @@ const MarketView = (props: Props) => {
     setCurrentPage(nextPage)
   }
 
-  const onSort = (columnId: MarketDataTableColumnTypes, newSortOrder: SortOrder) => {
+  const onSort = React.useCallback((columnId: MarketDataTableColumnTypes, newSortOrder: SortOrder) => {
     const updatedTableHeaders = tableHeaders.map(header => {
       if (header.id === columnId) {
         return {
@@ -103,7 +103,7 @@ const MarketView = (props: Props) => {
     setTableHeaders(updatedTableHeaders)
     setSortByColumnId(columnId)
     setSortOrder(newSortOrder)
-  }
+  }, [])
 
   React.useEffect(() => {
     if (coinMarkets.length === 0) {
@@ -161,5 +161,3 @@ const MarketView = (props: Props) => {
     </StyledWrapper>
   )
 }
-
-export default MarketView

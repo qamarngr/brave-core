@@ -1,5 +1,4 @@
 import BigNumber from 'bignumber.js'
-import * as numeral from 'numeral'
 
 import { CurrencySymbols } from './currency-symbols'
 
@@ -68,25 +67,58 @@ export const formatTokenAmountWithCommasAndDecimals = (value: string, symbol: st
 }
 
 export const formatPriceWithAbbreviation = (value: string, defaultCurrency: string, decimals: number = 2): string => {
-  if (!value) {
+  if (!value || isNaN(Number(value))) {
     return ''
   }
-  const decimalPlacesFormat = String('').padEnd(decimals, '0')
   const currencySymbol = CurrencySymbols[defaultCurrency]
+  const number = Number(value)
 
-  return currencySymbol + numeral(value).format(`0.${decimalPlacesFormat}a`).toUpperCase()
+  const min = 1e3 // 1000
+
+  if (number >= min) {
+    const units = ['k', 'M', 'B', 'T']
+    const order = Math.floor(Math.log(number) / Math.log(1000))
+    const unitName = units[order - 1]
+    const fixedPointNumber = Number((number / 1000 ** order).toFixed(decimals))
+    const formattedNumber = new Intl.NumberFormat(navigator.language).format(fixedPointNumber)
+    return currencySymbol + formattedNumber + unitName
+  }
+
+  return number.toFixed(decimals).toString()
 }
 
-export const formatPricePercentageChange = (value: string | number, absoluteValue: true): string => {
+export const formatPricePercentageChange = (value: number, decimals: number, absoluteValue = true): string => {
   if (!value) {
     return ''
   }
 
-  const formattedValue = numeral(value).format('0.00')
+  const formattedValue = new Intl.NumberFormat(navigator.language, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  }).format(value)
 
   if (absoluteValue && formattedValue.startsWith('-')) {
     return formattedValue.substring(1) + '%' // remove the '-' sign
   }
 
   return formattedValue + '%'
+}
+
+export const abbreviateNumber = (number: number, decimals: number = 2): string => {
+  const min = 1e3 // 1000
+
+  if (isNaN(number)) {
+    return number.toString()
+  }
+
+  if (number >= min) {
+    const units = ['k', 'M', 'B', 'T']
+    const order = Math.floor(Math.log(number) / Math.log(1000))
+    const unitName = units[order - 1]
+    const num = Number((number / 1000 ** order).toFixed(decimals))
+
+    return num + unitName
+  }
+
+  return number.toFixed(decimals).toString()
 }

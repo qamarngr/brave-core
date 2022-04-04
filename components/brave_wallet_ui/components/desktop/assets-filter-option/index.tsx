@@ -9,7 +9,7 @@ export interface Props {
   onSelect: (value: string) => void
 }
 
-const AssetsFilterOption = (props: Props) => {
+export const AssetsFilterOption = (props: Props) => {
   const { selected, label, value, onSelect } = props
 
   const onClick = () => {
@@ -25,5 +25,3 @@ const AssetsFilterOption = (props: Props) => {
     </Option>
   )
 }
-
-export default AssetsFilterOption

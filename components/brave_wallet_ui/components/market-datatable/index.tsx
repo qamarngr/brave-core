@@ -1,5 +1,4 @@
 import * as React from 'react'
-import InfinitieScroll from 'react-infinite-scroll-component'
 import { getLocale } from '../../../common/locale'
 import { BraveWallet, MarketDataTableColumnTypes, SortOrder } from '../../constants/types'
 import Table, { Cell, Header, Row } from '../shared/datatable'
@@ -15,9 +14,9 @@ import {
   formatPricePercentageChange,
   formatPriceWithAbbreviation
 } from '../../utils/format-prices'
-import AssetNameAndIcon from '../asset-name-and-icon'
-import AssetPriceChange from '../asset-price-change'
-import { LoadIcon, LoadIconWrapper } from '../desktop/views/market/style'
+import { AssetNameAndIcon } from '../asset-name-and-icon'
+import { AssetPriceChange } from '../asset-price-change'
+import useOnScreen from '../../common/hooks/on-screen'
 import { CoinGeckoText } from '../desktop/views/portfolio/style'
 
 export interface MarketDataHeader extends Header {
@@ -33,8 +32,19 @@ export interface Props {
   onSort?: (column: MarketDataTableColumnTypes, newSortOrder: SortOrder) => void
 }
 
-const MarketDataTable = (props: Props) => {
+export const MarketDataTable = (props: Props) => {
   const { headers, coinMarketData, moreDataAvailable, showEmptyState, onFetchMoreMarketData, onSort } = props
+  const ref: any = React.useRef<HTMLDivElement>()
+  const onScreen = useOnScreen<HTMLDivElement>(ref, {
+    rootMargin: '0px',
+    threshold: 0
+  })
+
+  React.useEffect(() => {
+    if (onScreen && moreDataAvailable) {
+      onFetchMoreMarketData()
+    }
+  }, [onScreen, moreDataAvailable])
 
   const renderCells = (coinMarkDataItem: BraveWallet.CoinMarket) => {
     const {
@@ -50,7 +60,7 @@ const MarketDataTable = (props: Props) => {
     } = coinMarkDataItem
 
     const formattedPrice = formatFiatAmountWithCommasAndDecimals(currentPrice.toString(), 'USD')
-    const formattedPercentageChange = formatPricePercentageChange(priceChangePercentage24h, true)
+    const formattedPercentageChange = formatPricePercentageChange(priceChangePercentage24h, 2, true)
     const formattedMarketCap = formatPriceWithAbbreviation(marketCap.toString(), 'USD', 1)
     const formattedVolume = formatPriceWithAbbreviation(totalVolume.toString(), 'USD', 1)
     const isDown = priceChange24h < 0
@@ -89,7 +99,7 @@ const MarketDataTable = (props: Props) => {
       <TextWrapper alignment="right">{formattedVolume}</TextWrapper>
 
       // Line Chart Column
-      // Commented out because priceHisotry data is yet to be
+      // Commented out because priceHistory data is yet to be
       // available from the backend
       // <LineChartWrapper>
       //   <LineChart
@@ -129,36 +139,19 @@ const MarketDataTable = (props: Props) => {
 
   return (
     <StyledWrapper>
-        <InfinitieScroll
-          dataLength={coinMarketData.length}
-          next={onFetchMoreMarketData}
-          loader={
-            <LoadIconWrapper>
-              <LoadIcon />
-            </LoadIconWrapper>
-          }
-          hasMore={moreDataAvailable}
-          endMessage={
-            <CoinGeckoText>{getLocale('braveWalletPoweredByCoinGecko')}</CoinGeckoText>
-          }
-          style={{
-            overflow: 'inherit'
-          }}
+      <TableWrapper>
+        <Table
+          headers={headers}
+          rows={rows}
+          onSort={onSort}
+          stickyHeaders={true}
         >
-          <TableWrapper>
-            <Table
-              headers={headers}
-              rows={rows}
-              onSort={onSort}
-              stickyHeaders={true}
-            >
-              {/* Empty state message */}
-              {showEmptyState && getLocale('braveWalletMarketDataNoAssetsFound')}
-            </Table>
-          </TableWrapper>
-        </InfinitieScroll>
+          {/* Empty state message */}
+          {showEmptyState && getLocale('braveWalletMarketDataNoAssetsFound')}
+        </Table>
+      </TableWrapper>
+      {!moreDataAvailable && <CoinGeckoText>{getLocale('braveWalletPoweredByCoinGecko')}</CoinGeckoText>}
+      <div ref={ref}/>
     </StyledWrapper>
   )
 }
-
-export default MarketDataTable

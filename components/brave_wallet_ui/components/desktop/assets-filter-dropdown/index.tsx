@@ -2,7 +2,7 @@ import { AssetFilter } from '../../../constants/types'
 import * as React from 'react'
 
 import { StyledWrapper, Button, CaratDown, Dropdown } from './style'
-import AssetsFilterOption from '../assets-filter-option'
+import { AssetsFilterOption } from '../assets-filter-option'
 
 export interface Props {
   options: AssetFilter[]

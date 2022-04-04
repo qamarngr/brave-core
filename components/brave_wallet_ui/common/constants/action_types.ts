@@ -1,3 +1,4 @@
+
 // Copyright (c) 2022 The Brave Authors. All rights reserved.
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
@@ -103,7 +104,9 @@ export type SetTransactionProviderErrorType = {
 }
 
 export type GetCoinMarketPayload = {
+  // Currency of the asset stats
   vsAsset: string
+  // Number of items to fetch
   limit: number
 }
 
