@@ -278,8 +278,7 @@ TEST(EthDataParser, GetTransactionInfoFromDataSellTokenForEthToUniswapV3) {
   EXPECT_EQ(tx_args[0],
             "0xc98d64da73a6616c42117b582e832812e7b8d57f"  // RSS3
             "a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"    // USDC
-            "c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"    // WETH
-  );
+            "c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");  // WETH
   EXPECT_EQ(tx_args[1], "0x821ab0d44149800000");
   EXPECT_EQ(tx_args[2], "0x248b3366b6ffd46");
 }
@@ -329,10 +328,58 @@ TEST(EthDataParser, GetTransactionInfoFromDataSellTokenForTokenToUniswapV3) {
   EXPECT_EQ(tx_args[0],
             "0xdef1ca1fb7fbcdc777520aa7f396b4e015f497ab"  // COW
             "c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"    // WETH
-            "a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"    // USDC
-  );
+            "a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48");  // USDC
   EXPECT_EQ(tx_args[1], "0x4d12b6295c69ddebd5");
   EXPECT_EQ(tx_args[2], "0x3b9aca00");
+}
+
+TEST(EthDataParser, GetTransactionInfoFromDataSellToUniswap) {
+  mojom::TransactionType tx_type;
+  std::vector<std::string> tx_params;
+  std::vector<std::string> tx_args;
+
+  // TXN: USDC → WETH → LDO
+  // sellToUniswap(address[] tokens,
+  //               uint256 sellAmount,
+  //               uint256 minBuyAmount,
+  //               bool isSushi)
+  ASSERT_TRUE(GetTransactionInfoFromData(
+      "0xd9627aa4"  // function selector
+
+      /*********************** HEAD (32x4 bytes) **********************/
+      // calldata pointer to tokens
+      "0000000000000000000000000000000000000000000000000000000000000080"
+      "0000000000000000000000000000000000000000000000000000000077359400"
+      "000000000000000000000000000000000000000000000016b28ec6ba93b8bb17"
+      "0000000000000000000000000000000000000000000000000000000000000001"
+
+      /***************************** TAIL *****************************/
+      // calldata reference position for tokens
+      "0000000000000000000000000000000000000000000000000000000000000003"
+      "000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+      "000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+      "0000000000000000000000005a98fcbea516cf06857215779fd812ca3bef1b32"
+
+      // extraneous tail segment to be ignored
+      "869584cd00000000000000000000000086003b044f70dac0abc80ac8957305b63"
+      "70893ed0000000000000000000000000000000000000000000000da92815dbd62"
+      "4a716a",
+      &tx_type, &tx_params, &tx_args));
+
+  EXPECT_EQ(tx_type, mojom::TransactionType::ETHSwap);
+
+  ASSERT_EQ(tx_params.size(), 3UL);
+  EXPECT_EQ(tx_params[0], "bytes");
+  EXPECT_EQ(tx_params[1], "uint256");
+  EXPECT_EQ(tx_params[2], "uint256");
+
+  ASSERT_EQ(tx_args.size(), 3UL);
+  EXPECT_EQ(tx_args[0],
+            "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"  // USDC
+            "c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"    // WETH
+            "5a98fcbea516cf06857215779fd812ca3bef1b32");  // LDO
+  EXPECT_EQ(tx_args[1], "0x77359400");
+  EXPECT_EQ(tx_args[2], "0x16b28ec6ba93b8bb17");
 }
 
 TEST(EthDataParser, GetTransactionInfoFromDataTransformERC20) {

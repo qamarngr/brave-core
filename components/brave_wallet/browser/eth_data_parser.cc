@@ -131,6 +131,29 @@ bool GetTransactionInfoFromData(const std::string& data,
         "uint256"   // taker amount
     };
     *tx_args = {fill_path, tx_args->at(1), tx_args->at(2)};
+  } else if (selector == "0xd9627aa4") {
+    *tx_type = mojom::TransactionType::ETHSwap;
+
+    // Function:
+    // sellToUniswap(address[] tokens,
+    //               uint256 sellAmount,
+    //               uint256 minBuyAmount,
+    //               bool isSushi)
+    //
+    // Ref:
+    // https://github.com/0xProject/protocol/blob/8d6f6e76e053f7b065d3315ddb31d2c35caddca7/contracts/zero-ex/contracts/src/features/UniswapFeature.sol#L93-L104
+    if (!brave_wallet::ABIDecode({"address[]", "uint256", "uint256", "bool"},
+                                 calldata, tx_params, tx_args))
+      return false;
+
+    // Populate ETHSwap tx_params and tx_args.
+    *tx_params = {
+        "bytes",    // fill path
+        "uint256",  // maker amount
+        "uint256"   // taker amount
+    };
+    *tx_args = {tx_args->at(0), tx_args->at(1), tx_args->at(2)};
+
   } else if (selector == "0x415565b0") {
     *tx_type = mojom::TransactionType::ETHSwap;
 

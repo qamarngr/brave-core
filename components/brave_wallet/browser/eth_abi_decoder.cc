@@ -50,18 +50,24 @@ bool GetAddressFromData(const std::string& input,
   return true;
 }
 
-// GetUint8FromData extracts a 32-byte wide size_t value from the calldata
+// GetSizeFromData extracts a 32-byte wide size_t value from the calldata
 // at the specified offset.
 //
-// Do NOT use this function to parse integers that can lie outside the range of
-// size_t. Ideal candidates are calldata tail references, length of dynamic
-// types, etc.
-bool GetUint8FromData(const std::string& input, size_t* arg, size_t offset) {
+// Using this function to extract an integer outside the range of size_t is
+// considered an error. Ideal candidates are calldata tail references, length
+// of dynamic types, etc.
+bool GetSizeFromData(const std::string& input, size_t* arg, size_t offset) {
   CHECK(arg);
 
   std::string padded_arg = "0x" + input.substr(offset, 64);
   uint256_t arg_uint;
   if (!brave_wallet::HexValueToUint256(padded_arg, &arg_uint))
+    return false;
+
+  // Since we use arg_uint as an array index, we need to cast the type to
+  // something that can be used as an index, viz. size_t. To prevent runtime
+  // errors, we make sure the value is within safe limits of size_t.
+  if (arg_uint > SIZE_T_MAX)
     return false;
 
   *arg = static_cast<size_t>(arg_uint);
@@ -86,6 +92,30 @@ bool GetUint256HexFromData(const std::string& input,
   return true;
 }
 
+// GetBoolFromData extracts a 32-byte wide boolean value from the
+// calldata at the specified offset.
+//
+// The parsed bool value is serialised as "true" or "false" strings.
+bool GetBoolFromData(const std::string& input,
+                     std::string* arg,
+                     size_t offset) {
+  CHECK(arg);
+
+  std::string padded_arg = "0x" + input.substr(offset, 64);
+  uint256_t arg_uint;
+  if (!brave_wallet::HexValueToUint256(padded_arg, &arg_uint))
+    return false;
+
+  if (arg_uint == 0)
+    *arg = "false";
+  else if (arg_uint == 1)
+    *arg = "true";
+  else
+    return false;
+
+  return true;
+}
+
 // GetBytesHexFromData extracts a bytes value from the calldata at the
 // specified offset using head-tail encoding mechanism. bytes are packed
 // tightly in chunks of 32 bytes, with the first 32 bytes encoding the length,
@@ -98,14 +128,46 @@ bool GetBytesHexFromData(const std::string& input,
   CHECK(arg);
 
   size_t pointer;
-  if (!GetUint8FromData(input, &pointer, offset))
+  if (!GetSizeFromData(input, &pointer, offset))
     return false;
 
   size_t bytes_len;
-  if (!GetUint8FromData(input, &bytes_len, pointer * 2))
+  if (!GetSizeFromData(input, &bytes_len, pointer * 2))
     return false;
 
   *arg = "0x" + input.substr(pointer * 2 + 64, bytes_len * 2);
+  return true;
+}
+
+// GetAddressArrayFromData parses a calldata sequence to extract a dynamic
+// array of addresses at the specified offset using head-tail encoding
+// mechanism. The encoding is similar to bytes, with the first 32 bytes
+// representing the number of elements in the array, followed by each element.
+//
+// The parsed data is joined together into a hex string prefixed by "0x".
+bool GetAddressArrayFromData(const std::string& input,
+                             std::string* arg,
+                             size_t offset) {
+  CHECK(arg);
+
+  size_t pointer;
+  if (!GetSizeFromData(input, &pointer, offset))
+    return false;
+
+  size_t array_len;
+  if (!GetSizeFromData(input, &array_len, pointer * 2))
+    return false;
+
+  size_t array_offset = pointer * 2 + 64;
+  *arg = "0x";
+  for (size_t i = 0; i < array_len; i++) {
+    std::string value;
+    if (!GetAddressFromData(input, &value, array_offset))
+      return false;
+    *arg += value.substr(2);
+    array_offset += 64;
+  }
+
   return true;
 }
 
@@ -116,19 +178,25 @@ bool ABIDecodeInternal(const std::vector<std::string> types,
   size_t offset = 0;
   size_t calldata_tail = 0;
 
-  for (auto type = begin(types); type != end(types); ++type) {
+  for (const auto& type : types) {
     if ((data.length() - offset) < 64)
       return false;
 
     std::string value;
-    if (*type == "address") {
+    if (type == "address") {
       if (!GetAddressFromData(data, &value, offset))
         return false;
-    } else if (*type == "uint256") {
+    } else if (type == "uint256") {
       if (!GetUint256HexFromData(data, &value, offset))
         return false;
-    } else if (*type == "bytes") {
+    } else if (type == "bool") {
+      if (!GetBoolFromData(data, &value, offset))
+        return false;
+    } else if (type == "bytes") {
       if (!GetBytesHexFromData(data, &value, offset))
+        return false;
+    } else if (type == "address[]") {
+      if (!GetAddressArrayFromData(data, &value, offset))
         return false;
     } else {
       // For unknown/unsupported types, we only extract 32-bytes. In case of
@@ -138,11 +206,11 @@ bool ABIDecodeInternal(const std::vector<std::string> types,
 
     // On encountering a dynamic type, we extract the reference to the start
     // of the tail section of the calldata.
-    if ((*type == "bytes" || *type == "string" ||
-         (*type).substr((*type).length() - 2) == "[]") &&
+    if ((type == "bytes" || type == "string" ||
+         type.substr(type.length() - 2) == "[]") &&
         calldata_tail == 0) {
       size_t pointer;
-      if (!GetUint8FromData(data, &pointer, offset))
+      if (!GetSizeFromData(data, &pointer, offset))
         return false;
 
       calldata_tail = pointer * 2;
@@ -154,7 +222,7 @@ bool ABIDecodeInternal(const std::vector<std::string> types,
       tx_args->push_back(value);
 
     if (tx_params)
-      tx_params->push_back(*type);
+      tx_params->push_back(type);
   }
 
   // Extraneous calldata, unless in the tail section, is considered invalid.
