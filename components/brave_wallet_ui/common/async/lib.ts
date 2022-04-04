@@ -524,7 +524,6 @@ export function refreshKeyringInfo () {
         walletInfo.selectedAccount = selectedAddress
       }
     }
-    console.log(walletInfo)
     dispatch(WalletActions.initialized(walletInfo))
   }
 }

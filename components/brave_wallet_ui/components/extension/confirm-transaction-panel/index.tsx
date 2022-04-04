@@ -259,7 +259,7 @@ function ConfirmTransactionPanel (props: Props) {
         : getLocale('braveWalletSend')
     , [transactionDetails])
 
-  const isConfirmButtonDisabled = React.useMemo(() => {
+/*  const isConfirmButtonDisabled = React.useMemo(() => {
     return (
       !!transactionDetails.sameAddressError ||
       !!transactionDetails.contractAddressError ||
@@ -267,7 +267,7 @@ function ConfirmTransactionPanel (props: Props) {
       !!transactionDetails.missingGasLimitError
     )
   }, [transactionDetails])
-
+*/
   /**
    * This will need updating if we ever switch to using per-locale formatting,
    * since `.` isnt always the decimal seperator
@@ -295,7 +295,7 @@ function ConfirmTransactionPanel (props: Props) {
       <EditGas
         transactionInfo={transactionInfo}
         onCancel={onToggleEditGas}
-        networkSpotPrice={findAssetPrice(transactionsNetwork.symbol)}
+        networkSpotPrice={findAssetPrice('FIL')}
         selectedNetwork={transactionsNetwork}
         baseFeePerGas={baseFeePerGas}
         suggestedMaxPriorityFeeChoices={suggestedMaxPriorityFeeChoices}
@@ -314,7 +314,7 @@ function ConfirmTransactionPanel (props: Props) {
         onCancel={onToggleEditAllowance}
         onSave={onEditAllowanceSave}
         proposedAllowance={transactionDetails.valueExact}
-        symbol={transactionDetails.symbol}
+        symbol={'FIL'}
         decimals={transactionDetails.decimals}
         approvalTarget={transactionDetails.approvalTargetLabel || ''}
       />
@@ -331,7 +331,7 @@ function ConfirmTransactionPanel (props: Props) {
       />
     )
   }
-
+  console.log(transactionDetails, transactionInfo)
   return (
     <StyledWrapper>
       <TopRow>
@@ -450,7 +450,6 @@ function ConfirmTransactionPanel (props: Props) {
                 <TransactionText
                   hasError={transactionDetails.insufficientFundsError}
                 >
-                  {transactionDetails.insufficientFundsError ? `${getLocale('braveWalletSwapInsufficientBalance')} ` : ''}
                   {new Amount(transactionDetails.gasFeeFiat)
                     .formatAsFiat(defaultCurrencies.fiat)}
                 </TransactionText>
@@ -477,7 +476,6 @@ function ConfirmTransactionPanel (props: Props) {
 
             {transactionInfo.txType !== BraveWallet.TransactionType.ERC20Approve &&
               <>
-
                 <SectionRow>
                   <TransactionTitle>
                     {transactionInfo.txType === BraveWallet.TransactionType.SolanaSystemTransfer
@@ -492,7 +490,7 @@ function ConfirmTransactionPanel (props: Props) {
                   {
                     new Amount(transactionDetails.gasFee)
                       .divideByDecimals(transactionsNetwork.decimals)
-                      .formatAsAsset(6, transactionsNetwork.symbol)
+                      .formatAsAsset(6, 'FIL')
                   }
                 </TransactionTypeText>
                 <TransactionText>
@@ -512,22 +510,19 @@ function ConfirmTransactionPanel (props: Props) {
                   </TransactionTitle>
                 </WarningTitleRow>
                 <TransactionTypeText>
-                  {transactionValueText} {transactionDetails.symbol} +
+                  {transactionValueText} {'FIL'} +
                 </TransactionTypeText>
                 <TransactionTypeText>
                   {
                     new Amount(transactionDetails.gasFee)
                       .divideByDecimals(transactionsNetwork.decimals)
-                      .formatAsAsset(6, transactionsNetwork.symbol)
+                      .formatAsAsset(6, 'FIL')
                   }
                 </TransactionTypeText>
 
                 <TransactionText
-                  hasError={transactionDetails.insufficientFundsError}
+                  hasError={false}
                 >
-                  {transactionDetails.insufficientFundsError
-                    ? `${getLocale('braveWalletSwapInsufficientBalance')} `
-                    : ''}
                   {transactionDetails.fiatTotal
                     .formatAsFiat(defaultCurrencies.fiat)}
                 </TransactionText>
@@ -573,7 +568,7 @@ function ConfirmTransactionPanel (props: Props) {
           buttonType='confirm'
           text={getLocale('braveWalletAllowSpendConfirmButton')}
           onSubmit={onConfirm}
-          disabled={isConfirmButtonDisabled}
+          disabled={false}
         />
       </ButtonRow>
     </StyledWrapper>

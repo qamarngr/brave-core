@@ -149,7 +149,7 @@ const TransactionDetailPanel = (props: Props) => {
       return transactionDetails.erc721BlockchainToken?.name + ' ' + transactionDetails.erc721TokenId
     }
     return new Amount(transactionDetails.value)
-      .formatAsAsset(undefined, transactionDetails.symbol)
+      .formatAsAsset(undefined, 'FIL')
   }, [transactionDetails, liveTransaction])
 
   const transactionFiatValue = React.useMemo((): string => {
@@ -209,8 +209,7 @@ const TransactionDetailPanel = (props: Props) => {
             <DetailTextDark>
               {
                 new Amount(transactionDetails.gasFee)
-                  .divideByDecimals(transactionsNetwork.decimals)
-                  .formatAsAsset(6, transactionsNetwork.symbol)
+                  .formatAsAsset(6, 'FIL')
               }
             </DetailTextDark>
             <DetailTextDark>

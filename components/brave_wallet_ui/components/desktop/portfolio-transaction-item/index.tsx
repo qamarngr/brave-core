@@ -175,8 +175,8 @@ const PortfolioTransactionItem = (props: Props) => {
         return (
           <>
             {displayAccountName ? text : toProperCase(text)}{' '}
-            <AddressOrAsset onClick={onAssetClick(transactionDetails.symbol)}>
-              {transactionDetails.symbol}
+            <AddressOrAsset onClick={onAssetClick('FIL')}>
+              {'FIL'}
             </AddressOrAsset>
           </>
         )
@@ -200,9 +200,9 @@ const PortfolioTransactionItem = (props: Props) => {
             <AddressOrAsset
               // Disabled for ERC721 tokens until we have NFT meta data
               disabled={transaction.txType === BraveWallet.TransactionType.ERC721TransferFrom || transaction.txType === BraveWallet.TransactionType.ERC721SafeTransferFrom}
-              onClick={onAssetClick(transactionDetails.symbol)}
+              onClick={onAssetClick('FIL')}
             >
-              {transactionDetails.symbol}
+              {'FIL'}
               {transaction.txType === BraveWallet.TransactionType.ERC721TransferFrom || transaction.txType === BraveWallet.TransactionType.ERC721SafeTransferFrom
                 ? ' ' + transactionDetails.erc721TokenId : ''}
             </AddressOrAsset>
@@ -220,8 +220,8 @@ const PortfolioTransactionItem = (props: Props) => {
           <DetailRow>
             <DetailTextDark>
               {toProperCase(text)} {transactionDetails.value}{' '}
-              <AddressOrAsset onClick={onAssetClick(transactionDetails.symbol)}>
-                {transactionDetails.symbol}
+              <AddressOrAsset onClick={onAssetClick('FIL')}>
+                {'FIL'}
               </AddressOrAsset> -{' '}
               <AddressOrAsset onClick={onAddressClick(transactionDetails.approvalTarget)}>
                 {transactionDetails.approvalTargetLabel}
@@ -237,8 +237,8 @@ const PortfolioTransactionItem = (props: Props) => {
           <DetailRow>
             <DetailTextDark>
               {transactionDetails.value}{' '}
-              <AddressOrAsset onClick={onAssetClick(transactionDetails.symbol)}>
-                {transactionDetails.symbol}
+              <AddressOrAsset onClick={onAssetClick('FIL')}>
+                {'FIL'}
               </AddressOrAsset>
             </DetailTextDark>
             <ArrowIcon />
@@ -336,9 +336,7 @@ const PortfolioTransactionItem = (props: Props) => {
                 <TransactionFeeTooltipTitle>{getLocale('braveWalletAllowSpendTransactionFee')}</TransactionFeeTooltipTitle>
                 <TransactionFeeTooltipBody>
                   {
-                    new Amount(transactionDetails.gasFee)
-                      .divideByDecimals(transactionsNetwork.decimals)
-                      .formatAsAsset(6, transactionsNetwork.symbol)
+                    transactionDetails.gasFee
                   }
                 </TransactionFeeTooltipBody>
                 <TransactionFeeTooltipBody>

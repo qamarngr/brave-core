@@ -87,7 +87,8 @@ function Send (props: Props) {
     if (!selectedAsset) {
       return false
     }
-
+    return false;
+    /*
     const amountWei = new Amount(selectedAssetAmount)
       .multiplyByDecimals(selectedAsset.decimals)
 
@@ -96,6 +97,7 @@ function Send (props: Props) {
     }
 
     return amountWei.gt(selectedAssetBalance)
+    */
   }, [selectedAssetBalance, selectedAssetAmount, selectedAsset])
 
   const tooltipMessage = React.useMemo((): string => {
