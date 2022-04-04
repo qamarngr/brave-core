@@ -22,7 +22,6 @@ import {
   SolFeeEstimates
 } from '../../constants/types'
 import {
-  ActiveOriginChanged,
   GetCoinMarketsResponse,
   IsEip1559Changed,
   NewUnapprovedTxAdded,
@@ -96,7 +95,6 @@ const defaultState: WalletState = {
   defaultNetworks: [] as BraveWallet.NetworkInfo[],
   isLoadingCoinMarketData: true,
   coinMarketData: [],
-  defaultNetworks: [] as BraveWallet.NetworkInfo[],
   selectedNetworkFilter: AllNetworksOption,
   solFeeEstimates: undefined
 }
