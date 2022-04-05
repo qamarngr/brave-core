@@ -9,6 +9,7 @@
 #if BUILDFLAG(ENABLE_EXTENSIONS)
 #include "brave/browser/ui/views/location_bar/brave_location_bar_view.h"
 #include "chrome/browser/ui/views/location_bar/location_bar_view.h"
+#include "components/reading_list/features/reading_list_switches.h"
 
 #define LocationBarView BraveLocationBarView
 #endif
@@ -18,8 +19,14 @@
       AddChildView(std::make_unique<BraveAvatarToolbarButton>(browser_view_)); \
   if (false)
 
+#define BRAVE_TOOLBAR_EXCLUDE_SIDE_PANEL             \
+  if (!reading_list::switches::IsSidePanelEnabled()) \
+    ;                                                \
+  else
+
 #include "src/chrome/browser/ui/views/toolbar/toolbar_view.cc"
 #undef BRAVE_TOOLBAR_VIEW_INIT
+#undef BRAVE_TOOLBAR_EXCLUDE_SIDE_PANEL
 #if BUILDFLAG(ENABLE_EXTENSIONS)
 #undef LocationBarView
 #endif

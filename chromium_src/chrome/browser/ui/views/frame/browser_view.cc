@@ -7,11 +7,17 @@
 #include "brave/browser/ui/views/tabs/brave_tab_strip.h"
 #include "brave/browser/ui/views/toolbar/brave_toolbar_view.h"
 #include "chrome/browser/ui/views/frame/tab_strip_region_view.h"
+#include "components/reading_list/features/reading_list_switches.h"
 
 #define ToolbarView BraveToolbarView
 #define BrowserTabStripController BraveBrowserTabStripController
 #define TabStrip BraveTabStrip
+
+#define BRAVE_BROWSER_VIEW_EXCLUDE_MAYBE_SHOWING_READING_LIST \
+  if (reading_list::switches::IsSidePanelEnabled())
+
 #include "src/chrome/browser/ui/views/frame/browser_view.cc"
 #undef ToolbarView
 #undef BrowserTabStripController
 #undef TabStrip
+#undef BRAVE_BROWSER_VIEW_EXCLUDE_MAYBE_SHOWING_READING_LIST

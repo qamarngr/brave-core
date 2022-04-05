@@ -5,6 +5,7 @@
 
 #include "src/components/reading_list/features/reading_list_switches.cc"
 
+#include "base/feature_list.h"
 #include "base/feature_override.h"
 
 namespace reading_list {
@@ -13,6 +14,12 @@ namespace switches {
 OVERRIDE_FEATURE_DEFAULT_STATES({{
     {kReadLater, base::FEATURE_DISABLED_BY_DEFAULT},
 }});
+
+const base::Feature kSidePanel{"SidePanel", base::FEATURE_DISABLED_BY_DEFAULT};
+
+bool IsSidePanelEnabled() {
+  return base::FeatureList::IsEnabled(kSidePanel);
+}
 
 }  // namespace switches
 }  // namespace reading_list
