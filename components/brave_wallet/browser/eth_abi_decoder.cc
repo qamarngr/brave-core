@@ -5,8 +5,10 @@
 
 #include "brave/components/brave_wallet/browser/eth_abi_decoder.h"
 
+#include <limits>
 #include <map>
 
+#include "base/strings/string_util.h"
 #include "brave/components/brave_wallet/common/hex_utils.h"
 
 // This file implements decoding rules of calldata according to the Contract
@@ -67,7 +69,7 @@ bool GetSizeFromData(const std::string& input, size_t* arg, size_t offset) {
   // Since we use arg_uint as an array index, we need to cast the type to
   // something that can be used as an index, viz. size_t. To prevent runtime
   // errors, we make sure the value is within safe limits of size_t.
-  if (arg_uint > SIZE_T_MAX)
+  if (arg_uint > std::numeric_limits<size_t>::max())
     return false;
 
   *arg = static_cast<size_t>(arg_uint);
@@ -171,7 +173,7 @@ bool GetAddressArrayFromData(const std::string& input,
   return true;
 }
 
-bool ABIDecodeInternal(const std::vector<std::string> types,
+bool ABIDecodeInternal(const std::vector<std::string>& types,
                        const std::string& data,
                        std::vector<std::string>* tx_params,
                        std::vector<std::string>* tx_args) {
@@ -206,8 +208,7 @@ bool ABIDecodeInternal(const std::vector<std::string> types,
 
     // On encountering a dynamic type, we extract the reference to the start
     // of the tail section of the calldata.
-    if ((type == "bytes" || type == "string" ||
-         type.substr(type.length() - 2) == "[]") &&
+    if ((type == "bytes" || type == "string" || base::EndsWith(type, "[]")) &&
         calldata_tail == 0) {
       size_t pointer;
       if (!GetSizeFromData(data, &pointer, offset))
