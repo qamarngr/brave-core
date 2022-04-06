@@ -42,6 +42,7 @@ void BraveWalletProviderDelegateBridge::RequestEthereumPermissions(
 }
 
 void BraveWalletProviderDelegateBridge::GetAllowedAccounts(
+    mojom::CoinType type,
     bool include_accounts_when_locked,
     GetAllowedAccountsCallback callback) {
   auto completion =
