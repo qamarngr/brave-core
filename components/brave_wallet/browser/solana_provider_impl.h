@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "base/containers/flat_set.h"
 #include "base/memory/weak_ptr.h"
 #include "brave/components/brave_wallet/common/brave_wallet.mojom.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
@@ -19,7 +20,8 @@ namespace brave_wallet {
 class KeyringService;
 class BraveWalletProviderDelegate;
 
-class SolanaProviderImpl final : public mojom::SolanaProvider {
+class SolanaProviderImpl final : public mojom::SolanaProvider,
+                                 mojom::KeyringServiceObserver {
  public:
   SolanaProviderImpl(KeyringService* keyring_service,
                      std::unique_ptr<BraveWalletProviderDelegate> delegate);
@@ -51,9 +53,26 @@ class SolanaProviderImpl final : public mojom::SolanaProvider {
                  const absl::optional<std::string>& account,
                  mojom::SolanaProviderError error,
                  const std::string& error_message);
+  void OnEagerlyConnect(ConnectCallback callback,
+                        const absl::optional<std::string>& account,
+                        bool allowed);
 
+  // mojom::KeyringServiceObserver
+  void KeyringCreated(const std::string& keyring_id) override {}
+  void KeyringRestored(const std::string& keyring_id) override {}
+  void KeyringReset() override {}
+  void Locked() override {}
+  void Unlocked() override {}
+  void BackedUp() override {}
+  void AccountsChanged() override {}
+  void AutoLockMinutesChanged() override {}
+  void SelectedAccountChanged(mojom::CoinType coin) override;
+
+  base::flat_set<std::string> connected_map_;
   mojo::Remote<mojom::SolanaEventsListener> events_listener_;
   raw_ptr<KeyringService> keyring_service_ = nullptr;
+  mojo::Receiver<brave_wallet::mojom::KeyringServiceObserver>
+      keyring_observer_receiver_{this};
   std::unique_ptr<BraveWalletProviderDelegate> delegate_;
   base::WeakPtrFactory<SolanaProviderImpl> weak_factory_;
 };
