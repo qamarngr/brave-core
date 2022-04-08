@@ -215,7 +215,7 @@ bool ABIDecodeInternal(const std::vector<std::string>& types,
   }
 
   // Extraneous calldata, unless in the tail section, is considered invalid.
-  if (offset != calldata_tail && data.substr(offset).length() > 0)
+  if (offset != calldata_tail && offset < data.length())
     return false;
 
   return true;
