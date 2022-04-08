@@ -80,7 +80,7 @@ bool GetTransactionInfoFromData(const std::string& data,
     }
 
     std::vector<std::string> decoded_path;
-    if (!brave_wallet::UniswapEncodedPathDecode(tx_args->at(0), &decoded_path))
+    if (!brave_wallet::UniswapEncodedPathDecode(tx_args->at(0), decoded_path))
       return false;
     std::string fill_path = "0x";
     for (const auto& path : decoded_path) {
@@ -123,7 +123,7 @@ bool GetTransactionInfoFromData(const std::string& data,
     }
 
     std::vector<std::string> decoded_path;
-    if (!brave_wallet::UniswapEncodedPathDecode(tx_args->at(0), &decoded_path))
+    if (!brave_wallet::UniswapEncodedPathDecode(tx_args->at(0), decoded_path))
       return false;
     std::string fill_path = "0x";
     for (const auto& path : decoded_path) {

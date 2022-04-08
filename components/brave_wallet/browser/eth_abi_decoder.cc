@@ -45,10 +45,8 @@ namespace {
 // The parsed address value is prefixed by "0x".
 bool GetAddressFromData(const std::string& input,
                         size_t offset,
-                        std::string* arg) {
-  CHECK(arg);
-
-  *arg = "0x" + input.substr(offset + 24, 40);
+                        std::string& arg) {
+  arg = "0x" + input.substr(offset + 24, 40);
   return true;
 }
 
@@ -58,9 +56,7 @@ bool GetAddressFromData(const std::string& input,
 // Using this function to extract an integer outside the range of size_t is
 // considered an error. Ideal candidates are calldata tail references, length
 // of dynamic types, etc.
-bool GetSizeFromData(const std::string& input, size_t offset, size_t* arg) {
-  CHECK(arg);
-
+bool GetSizeFromData(const std::string& input, size_t offset, size_t& arg) {
   std::string padded_arg = "0x" + input.substr(offset, 64);
   uint256_t arg_uint;
   if (!brave_wallet::HexValueToUint256(padded_arg, &arg_uint))
@@ -72,7 +68,7 @@ bool GetSizeFromData(const std::string& input, size_t offset, size_t* arg) {
   if (arg_uint > std::numeric_limits<size_t>::max())
     return false;
 
-  *arg = static_cast<size_t>(arg_uint);
+  arg = static_cast<size_t>(arg_uint);
   return true;
 }
 
@@ -82,15 +78,13 @@ bool GetSizeFromData(const std::string& input, size_t offset, size_t* arg) {
 // The parsed uint256 value is serialized as a hex string prefixed by "0x".
 bool GetUint256HexFromData(const std::string& input,
                            size_t offset,
-                           std::string* arg) {
-  CHECK(arg);
-
+                           std::string& arg) {
   std::string padded_arg = "0x" + input.substr(offset, 64);
   uint256_t arg_uint;
   if (!brave_wallet::HexValueToUint256(padded_arg, &arg_uint))
     return false;
 
-  *arg = brave_wallet::Uint256ValueToHex(arg_uint);
+  arg = brave_wallet::Uint256ValueToHex(arg_uint);
   return true;
 }
 
@@ -100,18 +94,16 @@ bool GetUint256HexFromData(const std::string& input,
 // The parsed bool value is serialized as "true" or "false" strings.
 bool GetBoolFromData(const std::string& input,
                      size_t offset,
-                     std::string* arg) {
-  CHECK(arg);
-
+                     std::string& arg) {
   std::string padded_arg = "0x" + input.substr(offset, 64);
   uint256_t arg_uint;
   if (!brave_wallet::HexValueToUint256(padded_arg, &arg_uint))
     return false;
 
   if (arg_uint == 0)
-    *arg = "false";
+    arg = "false";
   else if (arg_uint == 1)
-    *arg = "true";
+    arg = "true";
   else
     return false;
 
@@ -126,18 +118,16 @@ bool GetBoolFromData(const std::string& input,
 // The parsed bytearray is serialized as a hex string prefixed by "0x".
 bool GetBytesHexFromData(const std::string& input,
                          size_t offset,
-                         std::string* arg) {
-  CHECK(arg);
-
+                         std::string& arg) {
   size_t pointer;
-  if (!GetSizeFromData(input, offset, &pointer))
+  if (!GetSizeFromData(input, offset, pointer))
     return false;
 
   size_t bytes_len;
-  if (!GetSizeFromData(input, pointer * 2, &bytes_len))
+  if (!GetSizeFromData(input, pointer * 2, bytes_len))
     return false;
 
-  *arg = "0x" + input.substr(pointer * 2 + 64, bytes_len * 2);
+  arg = "0x" + input.substr(pointer * 2 + 64, bytes_len * 2);
   return true;
 }
 
@@ -149,24 +139,22 @@ bool GetBytesHexFromData(const std::string& input,
 // The parsed data is joined together into a hex string prefixed by "0x".
 bool GetAddressArrayFromData(const std::string& input,
                              size_t offset,
-                             std::string* arg) {
-  CHECK(arg);
-
+                             std::string& arg) {
   size_t pointer;
-  if (!GetSizeFromData(input, offset, &pointer))
+  if (!GetSizeFromData(input, offset, pointer))
     return false;
 
   size_t array_len;
-  if (!GetSizeFromData(input, pointer * 2, &array_len))
+  if (!GetSizeFromData(input, pointer * 2, array_len))
     return false;
 
   size_t array_offset = pointer * 2 + 64;
-  *arg = "0x";
+  arg = "0x";
   for (size_t i = 0; i < array_len; i++) {
     std::string value;
-    if (!GetAddressFromData(input, array_offset, &value))
+    if (!GetAddressFromData(input, array_offset, value))
       return false;
-    *arg += value.substr(2);
+    arg += value.substr(2);
     array_offset += 64;
   }
 
@@ -186,19 +174,19 @@ bool ABIDecodeInternal(const std::vector<std::string>& types,
 
     std::string value;
     if (type == "address") {
-      if (!GetAddressFromData(data, offset, &value))
+      if (!GetAddressFromData(data, offset, value))
         return false;
     } else if (type == "uint256") {
-      if (!GetUint256HexFromData(data, offset, &value))
+      if (!GetUint256HexFromData(data, offset, value))
         return false;
     } else if (type == "bool") {
-      if (!GetBoolFromData(data, offset, &value))
+      if (!GetBoolFromData(data, offset, value))
         return false;
     } else if (type == "bytes") {
-      if (!GetBytesHexFromData(data, offset, &value))
+      if (!GetBytesHexFromData(data, offset, value))
         return false;
     } else if (type == "address[]") {
-      if (!GetAddressArrayFromData(data, offset, &value))
+      if (!GetAddressArrayFromData(data, offset, value))
         return false;
     } else {
       // For unknown/unsupported types, we only extract 32-bytes. In case of
@@ -211,7 +199,7 @@ bool ABIDecodeInternal(const std::vector<std::string>& types,
     if ((type == "bytes" || type == "string" || base::EndsWith(type, "[]")) &&
         calldata_tail == 0) {
       size_t pointer;
-      if (!GetSizeFromData(data, offset, &pointer))
+      if (!GetSizeFromData(data, offset, pointer))
         return false;
 
       calldata_tail = pointer * 2;
@@ -236,7 +224,7 @@ bool ABIDecodeInternal(const std::vector<std::string>& types,
 }  // namespace
 
 bool UniswapEncodedPathDecode(const std::string& encodedPath,
-                              std::vector<std::string>* path) {
+                              std::vector<std::string>& path) {
   // Parse a Uniswap-encoded path and return a vector of addresses representing
   // each hop involved in the swap.
   //
@@ -256,7 +244,7 @@ bool UniswapEncodedPathDecode(const std::string& encodedPath,
   // Parse first hop address.
   if (data.length() < 40)
     return false;
-  path->push_back("0x" + data.substr(0, 40));
+  path.push_back("0x" + data.substr(0, 40));
   data = data.substr(40);
 
   while (true) {
@@ -271,12 +259,12 @@ bool UniswapEncodedPathDecode(const std::string& encodedPath,
     // Parse next hop.
     if (data.length() < 40)
       return false;
-    path->push_back("0x" + data.substr(0, 40));
+    path.push_back("0x" + data.substr(0, 40));
     data = data.substr(40);
   }
 
   // Require a minimum of 2 addresses for a single-hop swap.
-  if (path->size() < 2)
+  if (path.size() < 2)
     return false;
 
   return true;
