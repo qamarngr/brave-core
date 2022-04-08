@@ -43,23 +43,27 @@ bool GetTransactionInfoFromData(const std::string& data,
   if (selector == "0xa9059cbb") {
     *tx_type = mojom::TransactionType::ERC20Transfer;
     if (!brave_wallet::ABIDecode({"address", "uint256"}, calldata, tx_params,
-                                 tx_args))
+                                 tx_args)) {
       return false;
+    }
   } else if (selector == "0x095ea7b3") {
     *tx_type = mojom::TransactionType::ERC20Approve;
     if (!brave_wallet::ABIDecode({"address", "uint256"}, calldata, tx_params,
-                                 tx_args))
+                                 tx_args)) {
       return false;
+    }
   } else if (selector == "0x23b872dd") {
     *tx_type = mojom::TransactionType::ERC721TransferFrom;
     if (!brave_wallet::ABIDecode({"address", "address", "uint256"}, calldata,
-                                 tx_params, tx_args))
+                                 tx_params, tx_args)) {
       return false;
+    }
   } else if (selector == "0x42842e0e") {
     *tx_type = mojom::TransactionType::ERC721SafeTransferFrom;
     if (!brave_wallet::ABIDecode({"address", "address", "uint256"}, calldata,
-                                 tx_params, tx_args))
+                                 tx_params, tx_args)) {
       return false;
+    }
   } else if (selector == "0x3598d8ab") {
     *tx_type = mojom::TransactionType::ETHSwap;
 
@@ -71,8 +75,9 @@ bool GetTransactionInfoFromData(const std::string& data,
     // Ref:
     // https://github.com/0xProject/protocol/blob/b46eeadc64485288add5940a210e1a7d0bcb5481/contracts/zero-ex/contracts/src/features/interfaces/IUniswapV3Feature.sol#L29-L41
     if (!brave_wallet::ABIDecode({"bytes", "uint256", "address"}, calldata,
-                                 tx_params, tx_args))
+                                 tx_params, tx_args)) {
       return false;
+    }
 
     std::vector<std::string> decoded_path;
     if (!brave_wallet::UniswapEncodedPathDecode(tx_args->at(0), &decoded_path))
@@ -113,8 +118,9 @@ bool GetTransactionInfoFromData(const std::string& data,
     // Ref:
     // https://github.com/0xProject/protocol/blob/b46eeadc64485288add5940a210e1a7d0bcb5481/contracts/zero-ex/contracts/src/features/interfaces/IUniswapV3Feature.sol#L58-L71
     if (!brave_wallet::ABIDecode({"bytes", "uint256", "uint256", "address"},
-                                 calldata, tx_params, tx_args))
+                                 calldata, tx_params, tx_args)) {
       return false;
+    }
 
     std::vector<std::string> decoded_path;
     if (!brave_wallet::UniswapEncodedPathDecode(tx_args->at(0), &decoded_path))
@@ -143,8 +149,9 @@ bool GetTransactionInfoFromData(const std::string& data,
     // Ref:
     // https://github.com/0xProject/protocol/blob/8d6f6e76e053f7b065d3315ddb31d2c35caddca7/contracts/zero-ex/contracts/src/features/UniswapFeature.sol#L93-L104
     if (!brave_wallet::ABIDecode({"address[]", "uint256", "uint256", "bool"},
-                                 calldata, tx_params, tx_args))
+                                 calldata, tx_params, tx_args)) {
       return false;
+    }
 
     // Populate ETHSwap tx_params and tx_args.
     *tx_params = {
@@ -168,8 +175,9 @@ bool GetTransactionInfoFromData(const std::string& data,
     // https://github.com/0xProject/protocol/blob/b46eeadc64485288add5940a210e1a7d0bcb5481/contracts/zero-ex/contracts/src/features/interfaces/ITransformERC20Feature.sol#L113-L134
     if (!brave_wallet::ABIDecode(
             {"address", "address", "uint256", "uint256", "(uint32,bytes)[]"},
-            calldata, tx_params, tx_args))
+            calldata, tx_params, tx_args)) {
       return false;
+    }
 
     // Populate ETHSwap tx_params and tx_args.
     *tx_params = {
