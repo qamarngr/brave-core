@@ -8,7 +8,6 @@ import { getString } from './locale'
 import ThemeProvider from '../components/common/StorybookThemeProvider'
 
 // Fonts
-import '../ui/webui/resources/fonts/muli.css'
 import '../ui/webui/resources/fonts/poppins.css'
 
 export const parameters = {
