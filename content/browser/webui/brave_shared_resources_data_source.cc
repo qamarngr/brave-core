@@ -17,6 +17,9 @@
 #include "base/memory/ref_counted_memory.h"
 #include "base/strings/string_piece.h"
 #include "base/strings/string_util.h"
+#include "brave/components/l10n/common/locale_util.h"
+#include "brave/ui/webui/resources/grit/brave_webui_resources.h"
+#include "brave/ui/webui/resources/grit/brave_webui_resources_map.h"
 #include "build/build_config.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_client.h"
@@ -25,8 +28,6 @@
 #include "ui/base/layout.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/base/webui/web_ui_util.h"
-#include "brave/ui/webui/resources/grit/brave_webui_resources.h"
-#include "brave/ui/webui/resources/grit/brave_webui_resources_map.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "base/strings/utf_string_conversions.h"
@@ -72,11 +73,12 @@ int GetIdrForPath(const std::string& path) {
 
 }  // namespace
 
-BraveSharedResourcesDataSource::BraveSharedResourcesDataSource() {
-}
+BraveSharedResourcesDataSource::BraveSharedResourcesDataSource(
+    const std::string& app_locale)
+    : app_language_code_(
+          base::ToLowerASCII(brave_l10n::GetLanguageCode(app_locale))) {}
 
-BraveSharedResourcesDataSource::~BraveSharedResourcesDataSource() {
-}
+BraveSharedResourcesDataSource::~BraveSharedResourcesDataSource() = default;
 
 std::string BraveSharedResourcesDataSource::GetSource() {
   return "brave-resources";
@@ -86,8 +88,8 @@ void BraveSharedResourcesDataSource::StartDataRequest(
     const GURL& url,
     const content::WebContents::Getter& wc_getter,
     content::URLDataSource::GotDataCallback callback) {
-  const std::string path = URLDataSource::URLToRequestPath(url);
-  int idr = GetIdrForPath(path);
+  const std::string& path = URLDataSource::URLToRequestPath(url);
+  int idr = GetIdrForPath(ResolveLocaleDependendResource(path));
   DCHECK_NE(-1, idr) << " path: " << path;
   scoped_refptr<base::RefCountedMemory> bytes;
 
@@ -167,6 +169,15 @@ BraveSharedResourcesDataSource::GetAccessControlAllowOriginForOrigin(
     return "null";
   }
   return origin;
+}
+
+std::string BraveSharedResourcesDataSource::ResolveLocaleDependendResource(
+    const std::string& path) {
+  if (app_language_code_ == "ru" || app_language_code_ == "el") {
+    if (base::EqualsCaseInsensitiveASCII(path, "fonts/poppins.css"))
+      return "fonts/manrope_as_poppins.css";
+  }
+  return path;
 }
 
 }  // namespace brave_content
