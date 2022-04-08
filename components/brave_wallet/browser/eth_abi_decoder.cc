@@ -79,7 +79,7 @@ bool GetSizeFromData(const std::string& input, size_t* arg, size_t offset) {
 // GetUint256HexFromData extracts a 32-byte wide uint256 value from the
 // calldata at the specified offset.
 //
-// The parsed uint256 value is serialised as a hex string prefixed by "0x".
+// The parsed uint256 value is serialized as a hex string prefixed by "0x".
 bool GetUint256HexFromData(const std::string& input,
                            std::string* arg,
                            size_t offset) {
@@ -97,7 +97,7 @@ bool GetUint256HexFromData(const std::string& input,
 // GetBoolFromData extracts a 32-byte wide boolean value from the
 // calldata at the specified offset.
 //
-// The parsed bool value is serialised as "true" or "false" strings.
+// The parsed bool value is serialized as "true" or "false" strings.
 bool GetBoolFromData(const std::string& input,
                      std::string* arg,
                      size_t offset) {
@@ -123,7 +123,7 @@ bool GetBoolFromData(const std::string& input,
 // tightly in chunks of 32 bytes, with the first 32 bytes encoding the length,
 // followed by the actual content.
 //
-// The parsed bytearray is serialised as a hex string prefixed by "0x".
+// The parsed bytearray is serialized as a hex string prefixed by "0x".
 bool GetBytesHexFromData(const std::string& input,
                          std::string* arg,
                          size_t offset) {
