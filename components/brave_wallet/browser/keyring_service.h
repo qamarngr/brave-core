@@ -181,7 +181,8 @@ class KeyringService : public KeyedService, public mojom::KeyringService {
   void SignTransactionByDefaultKeyring(const std::string& address,
                                        EthTransaction* tx,
                                        uint256_t chain_id);
-  std::string SignTransactionByFilecoinKeyring(FilTransaction* tx);
+  absl::optional<std::string> SignTransactionByFilecoinKeyring(
+      FilTransaction* tx);
 
   struct SignatureWithError {
     SignatureWithError();

@@ -170,13 +170,23 @@ void FilTxManager::OnGetNextNonce(std::unique_ptr<FilTxMeta> meta,
   meta->tx()->set_nonce(static_cast<uint64_t>(nonce));
   DCHECK(!keyring_service_->IsLocked());
   meta->set_status(mojom::TransactionStatus::Approved);
+
+  GetFilTxStateManager()->AddOrUpdateTx(*meta);
   auto signed_tx =
       keyring_service_->SignTransactionByFilecoinKeyring(meta->tx());
-  GetFilTxStateManager()->AddOrUpdateTx(*meta);
+  if (!signed_tx) {
+    std::move(callback).Run(
+        false,
+        mojom::ProviderErrorUnion::NewFilecoinProviderError(
+            mojom::FilecoinProviderError::kInternalError),
+        l10n_util::GetStringUTF8(IDS_WALLET_FIL_TRANSACTION_SIGN_ERROR));
+    return;
+  }
   json_rpc_service_->SendFilecoinTransaction(
-      signed_tx, base::BindOnce(&FilTxManager::OnSendFilecoinTransaction,
-                                weak_factory_.GetWeakPtr(), meta->id(),
-                                std::move(callback)));
+      signed_tx.value(),
+      base::BindOnce(&FilTxManager::OnSendFilecoinTransaction,
+                     weak_factory_.GetWeakPtr(), meta->id(),
+                     std::move(callback)));
 }
 
 void FilTxManager::OnSendFilecoinTransaction(
@@ -210,7 +220,7 @@ void FilTxManager::OnSendFilecoinTransaction(
 
   if (success)
     UpdatePendingTransactions();
-
+  DLOG(INFO) << "error_message:" << error_message;
   std::move(callback).Run(
       error_message.empty(),
       mojom::ProviderErrorUnion::NewFilecoinProviderError(error),

@@ -7,6 +7,7 @@
 
 #include <utility>
 
+#include "absl/types/optional.h"
 #include "base/base64.h"
 #include "base/json/json_reader.h"
 #include "base/strings/string_number_conversions.h"
@@ -147,7 +148,8 @@ std::string FilecoinKeyring::GetAddressInternal(HDKeyBase* hd_key_base) const {
       .EncodeAsString();
 }
 
-std::string FilecoinKeyring::SignTransaction(FilTransaction* tx) {
+absl::optional<std::string> FilecoinKeyring::SignTransaction(
+    FilTransaction* tx) {
   if (!tx)
     return std::string();
   auto address = tx->from().EncodeAsString();

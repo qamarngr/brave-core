@@ -15,6 +15,17 @@
 
 namespace brave_wallet {
 
+namespace {
+void CompareJSONs(const std::string& current_string,
+                  const std::string& expected_string) {
+  auto current_json = base::JSONReader::Read(current_string);
+  ASSERT_TRUE(current_json);
+  auto expected_string_json = base::JSONReader::Read(expected_string);
+  ASSERT_TRUE(expected_string_json);
+  EXPECT_EQ(*current_json, *expected_string_json);
+}
+}  // namespace
+
 TEST(FilTransactionUnitTest, Initialization) {
   FilTransaction first;
   EXPECT_FALSE(first.nonce());
@@ -130,20 +141,29 @@ TEST(FilTransactionUnitTest, Serialization) {
   EXPECT_EQ(empty_nonce, FilTransaction::FromValue(empty_nonce->ToValue()));
 }
 
-TEST(FilTransactionUnitTest, GetMessageToSign) {
+TEST(FilTransactionUnitTest, GetMessageToSignSecp) {
   auto transaction = FilTransaction::FromTxData(mojom::FilTxData::New(
       "1", "2", "3", "1", "5", "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q",
       "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq", "6"));
   std::string message_to_sign = transaction->GetMessageToSign();
-  EXPECT_EQ(message_to_sign,
-            "{\"from\":\"t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq\","
-            "\"gasfeecap\":\"3\",\"gaslimit\":1,\"gaspremium\":\"2\","
-            "\"method\":0,\"nonce\":1,\"params\":\"\",\"to\":"
-            "\"t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q\",\"value\":\"6\"}");
+  CompareJSONs(message_to_sign,
+               R"({
+                 "From": "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq",
+                 "GasFeeCap": "3",
+                 "GasLimit": 1,
+                 "GasPremium": "2",
+                 "MethodNum": 0,
+                 "Params": "",
+                 "Sequence": 1,
+                 "To": "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q",
+                 "Value": "6",
+                 "Version": 0
+               })");
 
-  std::string signature = transaction->GetSignedTransaction(
+  auto signature = transaction->GetSignedTransaction(
       "8VcW07ADswS4BV2cxi5rnIadVsyTDDhY1NfDH19T8Uo=");
-  auto signature_value = base::JSONReader::Read(signature);
+  ASSERT_TRUE(signature.has_value());
+  auto signature_value = base::JSONReader::Read(*signature);
   EXPECT_TRUE(signature_value);
   auto* message = signature_value->FindKey("message");
   auto* signature_data = signature_value->FindStringPath("signature.data");
@@ -151,17 +171,64 @@ TEST(FilTransactionUnitTest, GetMessageToSign) {
   EXPECT_TRUE(signature_data);
   auto message_as_value = base::JSONReader::Read(message_to_sign);
   EXPECT_TRUE(message_as_value);
-  EXPECT_EQ(*message, *message_as_value);
   EXPECT_EQ(*signature_data,
             "SozNIZGNAvALCWtc38OUhO9wdFl82qESGhjnVVhI6CYNN0gP5qa+hZtyFh+"
             "j9K0wIVVU10ZJPgaV0yM6a+xwKgA=");
-  // EXPECT_EQ(result.signature, "");
+  EXPECT_EQ(*message, *message_as_value);
+}
+
+TEST(FilTransactionUnitTest, GetMessageToSignBLS) {
+  const std::string from_account =
+      "t3uylp7xgte6rpiqhpivxohtzs7okpnq44mnckimwf6mgi6yc4o6f3iyd426u6wzloiig3a4"
+      "ocyug4ftz64xza";
+  const std::string to_account =
+      "t3uylp7xgte6rpiqhpivxohtzs7okpnq44mnckimwf6mgi6yc4o6f3iyd426u6wzloiig3a4"
+      "ocyug4ftz64xza";
+  auto transaction = FilTransaction::FromTxData(mojom::FilTxData::New(
+      "1", "2", "3", "1", "5", from_account, to_account, "6"));
+  std::string message_to_sign = transaction->GetMessageToSign();
+  std::string expected_message =
+      R"({
+        "From": "{from_account}",
+        "GasFeeCap": "3",
+        "GasLimit": 1,
+        "GasPremium": "2",
+        "MethodNum": 0,
+        "Params": "",
+        "Sequence": 1,
+        "To": "{to_account}",
+        "Value": "6",
+        "Version": 0
+      })";
+  base::ReplaceFirstSubstringAfterOffset(&expected_message, 0, "{from_account}",
+                                         from_account);
+  base::ReplaceFirstSubstringAfterOffset(&expected_message, 0, "{to_account}",
+                                         to_account);
+  CompareJSONs(message_to_sign, expected_message);
+
+  auto signature = transaction->GetSignedTransaction(
+      "7ug8i7Q6xddnBpvjbHe8zm+UekV+EVtOUxpNXr+PpCc=");
+  ASSERT_TRUE(signature.has_value());
+  auto signature_value = base::JSONReader::Read(*signature);
+  EXPECT_TRUE(signature_value);
+  auto* message = signature_value->FindKey("message");
+  auto* signature_data = signature_value->FindStringPath("signature.data");
+  EXPECT_TRUE(message);
+  EXPECT_TRUE(signature_data);
+  auto message_as_value = base::JSONReader::Read(message_to_sign);
+  EXPECT_TRUE(message_as_value);
+  EXPECT_EQ(
+      *signature_data,
+      "lsMyTOOAaW9/FxIKupqypmUl1hXLOKrbcJdQs+bHMPNF6aaCu2MaIRQKjS/"
+      "Hi6pMB84syUMuxRPC5JdpFvMl7gy5J2kvOEuDclSvc1ALQf2wOalPUOH022DNgLVATD36");
+  EXPECT_EQ(*message, *message_as_value);
 }
 
 TEST(FilTransactionUnitTest, ToFilTxData) {
   auto tx_data =
       mojom::FilTxData::New("1", "2", "3", "1", "5",
-                            "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q", "6");
+                            "t1h4n7rphclbmwyjcp6jrdiwlfcuwbroxy3jvg33q",
+                            "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq", "6");
   auto transaction = FilTransaction::FromTxData(tx_data);
   EXPECT_EQ(transaction->ToFilTxData(), tx_data);
 }

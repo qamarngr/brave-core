@@ -445,7 +445,7 @@ export function refreshTransactionHistory (address?: string) {
     const apiProxy = getAPIProxy()
     const { txService } = apiProxy
     const { wallet: { accounts, transactions } } = getState()
-
+    console.log(accounts, " <-> ", transactions)
     const accountsToUpdate = address !== undefined
       ? accounts.filter(account => account.address === address)
       : accounts
@@ -453,6 +453,7 @@ export function refreshTransactionHistory (address?: string) {
     const freshTransactions: AccountTransactions = await accountsToUpdate.reduce(
       async (acc, account) => acc.then(async (obj) => {
         const { transactionInfos } = await txService.getAllTransactionInfo(account.coin, account.address)
+        console.log(account.address, "transactionInfos:", transactionInfos);
         obj[account.address] = transactionInfos
         return obj
       }), Promise.resolve({}))

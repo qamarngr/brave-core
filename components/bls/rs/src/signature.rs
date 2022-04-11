@@ -1,25 +1,27 @@
 use std::convert::TryFrom;
-
+use std::convert::TryInto;
 use blake2b_simd::Params;
-use serde::{Deserialize, Serialize};
-use bls_signatures::{Signature};
+use bls_signatures::Serialize;
 use libsecp256k1::{sign, Message};
-use libsecp256k1::util::{
-  SECRET_KEY_SIZE, SIGNATURE_SIZE
-};
+use libsecp256k1::util::{SECRET_KEY_SIZE, SIGNATURE_SIZE};
 use thiserror::Error;
-use forest_message::{UnsignedMessage};
-use forest_encoding::{to_vec};
-pub const SIGNATURE_RECOVERY_SIZE: usize = SIGNATURE_SIZE + 1;
+use fvm_shared::message::Message as UnsignedMessage;
+use fvm_shared::encoding::Cbor;
+use fvm_shared::address::Protocol;
+use core::{array::TryFromSliceError, num::ParseIntError};
+use crate::message::MessageAPI;
 
+pub const SIGNATURE_RECOVERY_SIZE: usize = SIGNATURE_SIZE + 1;
 pub const BLS_SIGNATURE_SIZE: usize = 96;
 
 pub struct PrivateKey(pub [u8; SECRET_KEY_SIZE]);
-
-use core::{array::TryFromSliceError, num::ParseIntError};
-
 pub struct SignatureBLS(pub [u8; BLS_SIGNATURE_SIZE]);
 pub struct SignatureSECP256K1(pub [u8; SIGNATURE_RECOVERY_SIZE]);
+
+pub enum Signature {
+  SignatureSECP256K1(SignatureSECP256K1),
+  SignatureBLS(SignatureBLS),
+}
 
 impl Signature {
   pub fn as_bytes(&self) -> Vec<u8> {
@@ -40,31 +42,6 @@ impl SignatureSECP256K1 {
   pub fn as_bytes(&self) -> Vec<u8> {
       self.0.to_vec()
   }
-}
-
-impl TryFrom<String> for PrivateKey {
-    type Error = SignerError;
-
-    fn try_from(s: String) -> Result<PrivateKey, Self::Error> {
-        let v = base64::decode(&s)?;
-
-        PrivateKey::try_from(v)
-    }
-}
-
-impl TryFrom<Vec<u8>> for PrivateKey {
-    type Error = SignerError;
-
-    fn try_from(v: Vec<u8>) -> Result<PrivateKey, Self::Error> {
-        if v.len() != SECRET_KEY_SIZE {
-            return Err(SignerError::GenericString("Invalid Key Length".to_string()));
-        }
-        let mut sk = PrivateKey {
-            0: [0; SECRET_KEY_SIZE],
-        };
-        sk.0.copy_from_slice(&v[..SECRET_KEY_SIZE]);
-        Ok(sk)
-    }
 }
 
 /// Filecoin Signer Error
@@ -103,49 +80,9 @@ pub enum SignerError {
     /// Base64 decode Error
     #[error("Base64 decode error | {0}")]
     DecodeError(#[from] base64::DecodeError),
-    // Deserialize error
-    #[error("Cannot deserilaize parameters | {0}")]
-    DeserializeError(#[from] forest_encoding::Error),
-    // forest encoding error
-    #[error("Encoding error | {0}")]
-    EncodingError(#[from] forest_encoding::error::Error),
-}
 
-/// Unsigned message api structure
-#[cfg_attr(feature = "with-arbitrary", derive(arbitrary::Arbitrary))]
-#[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
-pub struct UnsignedMessageAPI {
-    #[serde(alias = "To")]
-    pub to: String,
-    #[serde(alias = "From")]
-    pub from: String,
-    #[serde(alias = "Nonce")]
-    pub nonce: u64,
-    #[serde(alias = "Value")]
-    pub value: String,
-
-    #[serde(rename = "gaslimit")]
-    #[serde(alias = "gasLimit")]
-    #[serde(alias = "gas_limit")]
-    #[serde(alias = "GasLimit")]
-    pub gas_limit: i64,
-
-    #[serde(rename = "gasfeecap")]
-    #[serde(alias = "gasFeeCap")]
-    #[serde(alias = "gas_fee_cap")]
-    #[serde(alias = "GasFeeCap")]
-    pub gas_fee_cap: String,
-
-    #[serde(rename = "gaspremium")]
-    #[serde(alias = "gasPremium")]
-    #[serde(alias = "gas_premium")]
-    #[serde(alias = "GasPremium")]
-    pub gas_premium: String,
-
-    #[serde(alias = "Method")]
-    pub method: u64,
-    #[serde(alias = "Params")]
-    pub params: String,
+    #[error("Marshall error | {0}")]
+    FvmSharedEncodingError(#[from] fvm_shared::encoding::Error),
 }
 
 static CID_PREFIX: &[u8] = &[0x01, 0x71, 0xa0, 0xe4, 0x02, 0x20];
@@ -167,34 +104,12 @@ pub fn get_digest(message: &[u8]) -> Result<[u8; 32], TryFromSliceError> {
 
     cid_hashed.as_bytes().try_into()
 }
-/// CBOR message in a buffer
-pub struct CborBuffer(pub Vec<u8>);
-
-impl AsRef<[u8]> for CborBuffer {
-    fn as_ref(&self) -> &[u8] {
-        &self.0
-    }
-}
-
-/// Serialize a transaction and return a CBOR hexstring.
-///
-/// # Arguments
-///
-/// * `transaction` - a filecoin transaction
-///
-pub fn transaction_serialize(
-  unsigned_message_arg: &UnsignedMessageAPI,
-) -> Result<CborBuffer, SignerError> {
-  let unsigned_message = UnsignedMessage::try_from(unsigned_message_arg)?;
-  let message_cbor = CborBuffer(to_vec(&unsigned_message)?);
-  Ok(message_cbor)
-}
 
 fn transaction_sign_secp56k1_raw(
-  unsigned_message_api: &UnsignedMessageAPI,
+  unsigned_message_api: &UnsignedMessage,
   private_key: &PrivateKey,
 ) -> Result<SignatureSECP256K1, SignerError> {
-  let message_cbor = transaction_serialize(unsigned_message_api)?;
+  let message_cbor = unsigned_message_api.marshal_cbor()?;
 
   let secret_key = libsecp256k1::SecretKey::parse_slice(&private_key.0)?;
 
@@ -210,19 +125,29 @@ fn transaction_sign_secp56k1_raw(
 
   Ok(signature)
 }
+
 fn transaction_sign_bls_raw(
-  unsigned_message_api: &UnsignedMessageAPI,
+  unsigned_message: &UnsignedMessage,
   private_key: &PrivateKey,
 ) -> Result<SignatureBLS, SignerError> {
   let sk = bls_signatures::PrivateKey::from_bytes(&private_key.0)?;
 
-  let unsigned_message = UnsignedMessage::try_from(unsigned_message_api)?;
-
   //sign the message's signing bytes
-  let sig = sk.sign(unsigned_message.to_signing_bytes());
+  let signed = sk.sign(unsigned_message.to_signing_bytes());
+  let v = signed.as_bytes();
+  if v.len() != BLS_SIGNATURE_SIZE {
+    return Err(SignerError::GenericString(
+        "Invalid Signature Length".to_string(),
+    ));
+  }
+  let mut signature = SignatureBLS {
+      0: [0; BLS_SIGNATURE_SIZE],
+  };
+  signature.0.copy_from_slice(&v[..BLS_SIGNATURE_SIZE]);
 
-  Ok(SignatureBLS::try_from(sig.as_bytes())?)
+  Ok(signature)
 }
+
 /// Sign a transaction and return a raw signature (RSV format).
 ///
 /// # Arguments
@@ -231,29 +156,41 @@ fn transaction_sign_bls_raw(
 /// * `private_key` - a `PrivateKey`
 ///
 pub fn transaction_sign_raw(
-  unsigned_message_api: &UnsignedMessageAPI,
+  unsigned_message_api: &UnsignedMessage,
   private_key: &PrivateKey,
 ) -> Result<Signature, SignerError> {
   // the `from` address protocol let us know which signing scheme to use
-  let signature = match unsigned_message_api
-      .from
-      .as_bytes()
-      .get(1)
-      .ok_or_else(|| SignerError::GenericString("Empty signing protocol".into()))?
-  {
-      b'1' => Signature::SignatureSECP256K1(transaction_sign_secp56k1_raw(
-          unsigned_message_api,
-          private_key,
-      )?),
-      b'3' => {
-          Signature::SignatureBLS(transaction_sign_bls_raw(unsigned_message_api, private_key)?)
-      }
-      _ => {
-          return Err(SignerError::GenericString(
-              "Unknown signing protocol".to_string(),
-          ));
-      }
+  let signature = match unsigned_message_api.from.protocol() {
+    Protocol::Secp256k1 => Signature::SignatureSECP256K1(transaction_sign_secp56k1_raw(
+        unsigned_message_api,
+        private_key,
+    )?),
+    Protocol::BLS => {
+        Signature::SignatureBLS(transaction_sign_bls_raw(unsigned_message_api, private_key)?)
+    },
+    _ => {
+        return Err(SignerError::GenericString(
+            "Unknown signing protocol".to_string(),
+        ));
+    }
   };
 
   Ok(signature)
 }
+
+pub fn fil_transaction_sign(
+  transaction: &str,
+  private_key_base64: &str,
+) -> String {
+  let mut de = serde_json::Deserializer::from_str(transaction);
+  let message_user_api = MessageAPI::deserialize(&mut de).unwrap();
+  let private_key  = base64::decode(&private_key_base64.to_string()).unwrap();
+  let mut sk = PrivateKey {
+    0: [0; SECRET_KEY_SIZE],
+  };
+  sk.0.copy_from_slice(&private_key[..SECRET_KEY_SIZE]);
+
+  let raw_signature = transaction_sign_raw(&message_user_api, &sk).unwrap();
+  base64::encode(raw_signature.as_bytes())
+}
+ 

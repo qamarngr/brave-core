@@ -200,7 +200,11 @@ void JsonRpcService::RequestInternal(
       request_headers["X-Eth-Block"] = "true";
     }
   }
-
+  request_headers["Authorization"] =
+      "Bearer "
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+      "eyJBbGxvdyI6WyJyZWFkIiwid3JpdGUiXX0.DCsusAwppYATgiIHLFP613lNTOHA22iLQ-"
+      "gLCruJMLQ";
   std::unique_ptr<base::Environment> env(base::Environment::Create());
   std::string brave_key(BUILDFLAG(BRAVE_SERVICES_KEY));
   if (env->HasVar("BRAVE_SERVICES_KEY")) {
@@ -1875,6 +1879,7 @@ void JsonRpcService::SendFilecoinTransaction(
         l10n_util::GetStringUTF8(IDS_WALLET_INTERNAL_ERROR));
     return;
   }
+  DLOG(INFO) << "request:" << request.value();
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnSendFilecoinTransaction,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
@@ -1887,6 +1892,7 @@ void JsonRpcService::OnSendFilecoinTransaction(
     const int status,
     const std::string& body,
     const base::flat_map<std::string, std::string>& headers) {
+  DLOG(INFO) << "body:" << body;
   if (status < 200 || status > 299) {
     std::move(callback).Run(
         "", mojom::FilecoinProviderError::kInternalError,

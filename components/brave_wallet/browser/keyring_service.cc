@@ -1306,7 +1306,7 @@ void KeyringService::RemoveHardwareAccount(const std::string& address,
   }
 }
 
-std::string KeyringService::SignTransactionByFilecoinKeyring(
+absl::optional<std::string> KeyringService::SignTransactionByFilecoinKeyring(
     FilTransaction* tx) {
   auto* keyring = GetHDKeyringById(mojom::kFilecoinKeyringId);
   if (!keyring)
