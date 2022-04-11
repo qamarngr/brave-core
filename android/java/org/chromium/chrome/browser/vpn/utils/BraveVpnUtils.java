@@ -201,7 +201,7 @@ public class BraveVpnUtils {
         NotificationCompat.Builder notificationBuilder =
                 new NotificationCompat.Builder(context, BraveActivity.CHANNEL_ID);
 
-        notificationBuilder.setSmallIcon(R.drawable.ic_chrome)
+        notificationBuilder.setSmallIcon(R.drawable.ic_vpn)
                 .setAutoCancel(false)
                 .setContentTitle(context.getResources().getString(R.string.brave_firewall_vpn))
                 .setContentText(
@@ -211,24 +211,6 @@ public class BraveVpnUtils {
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT);
 
         return notificationBuilder.build();
-    }
-
-    public static void showBraveVpnNotification(Context context) {
-        NotificationCompat.Builder notificationBuilder =
-                new NotificationCompat.Builder(context, BraveActivity.CHANNEL_ID);
-
-        notificationBuilder.setSmallIcon(R.drawable.ic_chrome)
-                .setAutoCancel(false)
-                .setContentTitle(context.getResources().getString(R.string.brave_firewall_vpn))
-                .setContentText(
-                        context.getResources().getString(R.string.brave_vpn_notification_message))
-                .setStyle(new NotificationCompat.BigTextStyle().bigText(
-                        context.getResources().getString(R.string.brave_vpn_notification_message)))
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
-
-        NotificationManager notificationManager =
-                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.notify(BRAVE_VPN_NOTIFICATION_ID, notificationBuilder.build());
     }
 
     public static void cancelBraveVpnNotification(Context context) {
