@@ -60,10 +60,10 @@ public class BraveVpnUtils {
     }
 
     public static boolean isBraveVpnFeatureEnable() {
-        // if (BraveVpnPrefUtils.isBraveVpnFeatureEnabled()) {
-        //     return true;
-        // }
-        return true;
+        if (BraveVpnPrefUtils.isBraveVpnFeatureEnabled()) {
+            return true;
+        }
+        return false;
     }
 
     public static void openBraveVpnPlansActivity(Activity activity) {
