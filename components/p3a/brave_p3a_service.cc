@@ -31,6 +31,7 @@
 #include "brave/components/p3a/brave_p3a_scheduler.h"
 #include "brave/components/p3a/brave_p3a_switches.h"
 #include "brave/components/p3a/brave_p3a_uploader.h"
+#include "brave/components/p3a/p3a_metrics.h"
 #include "brave/components/p3a/pref_names.h"
 #include "brave/components/version_info/version_info.h"
 #include "brave/vendor/brave_base/random.h"
@@ -39,12 +40,6 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "third_party/metrics_proto/reporting_info.pb.h"
-
-// Disarm the multiple-inclusion warning for kCollectedHistograms.
-// This file is the only place this header should be included.
-#define IN_BRAVE_P3A_SERVICE_
-#include "brave/components/p3a/p3a_metrics.h"
-#undef IN_BRAVE_P3A_SERVICE_
 
 namespace brave {
 

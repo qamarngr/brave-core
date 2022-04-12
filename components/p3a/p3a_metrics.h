@@ -6,15 +6,6 @@
 #ifndef BRAVE_COMPONENTS_P3A_P3A_METRICS_H_
 #define BRAVE_COMPONENTS_P3A_P3A_METRICS_H_
 
-// Check include guard to reduce the probability of being included
-// in multiple files and bloating the executable.
-//
-// When we get C++17 support we can declare the array `inline`
-// instead to have the linker remove any redundant copies.
-#ifndef IN_BRAVE_P3A_SERVICE_
-#error This file should only be included in brave_p3a_service.cc!
-#endif
-
 namespace brave::p3a {
 
 // Allowlist for histograms that we collect.
@@ -25,7 +16,7 @@ namespace brave::p3a {
 // although so far we've found it a useful review point.
 //
 // clang-format off
-constexpr const char* kCollectedHistograms[] = {
+constexpr inline const char* kCollectedHistograms[] = {
     "Brave.Core.BookmarksCountOnProfileLoad.2",
     "Brave.Core.CrashReportsEnabled",
     "Brave.Core.IsDefault",
