@@ -7,6 +7,7 @@
 
 #include <map>
 
+#include "base/strings/strcat.h"
 #include "brave/components/brave_wallet/browser/brave_wallet_constants.h"
 #include "brave/components/brave_wallet/browser/eth_abi_decoder.h"
 #include "brave/components/brave_wallet/common/brave_wallet_types.h"
@@ -84,7 +85,7 @@ bool GetTransactionInfoFromData(const std::string& data,
       return false;
     std::string fill_path = "0x";
     for (const auto& path : decoded_path) {
-      fill_path += path.substr(2);
+      base::StrAppend(&fill_path, {path.substr(2)});
     }
 
     // Populate ETHSwap tx_params and tx_args.
@@ -127,7 +128,7 @@ bool GetTransactionInfoFromData(const std::string& data,
       return false;
     std::string fill_path = "0x";
     for (const auto& path : decoded_path) {
-      fill_path += path.substr(2);
+      base::StrAppend(&fill_path, {path.substr(2)});
     }
 
     // Populate ETHSwap tx_params and tx_args.

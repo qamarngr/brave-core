@@ -12,7 +12,7 @@
 
 namespace brave_wallet {
 
-bool UniswapEncodedPathDecode(const std::string& encodedPath,
+bool UniswapEncodedPathDecode(const std::string& encoded_path,
                               std::vector<std::string>& path);
 
 bool ABIDecode(const std::vector<std::string>& types,

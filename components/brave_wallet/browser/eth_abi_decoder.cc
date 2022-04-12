@@ -8,6 +8,8 @@
 #include <limits>
 #include <map>
 
+#include "base/strings/strcat.h"
+#include "base/strings/string_piece.h"
 #include "base/strings/string_util.h"
 #include "brave/components/brave_wallet/common/hex_utils.h"
 
@@ -154,7 +156,7 @@ bool GetAddressArrayFromData(const std::string& input,
     std::string value;
     if (!GetAddressFromData(input, array_offset, value))
       return false;
-    arg += value.substr(2);
+    base::StrAppend(&arg, {value.substr(2)});
     array_offset += 64;
   }
 
@@ -223,7 +225,7 @@ bool ABIDecodeInternal(const std::vector<std::string>& types,
 
 }  // namespace
 
-bool UniswapEncodedPathDecode(const std::string& encodedPath,
+bool UniswapEncodedPathDecode(const std::string& encoded_path,
                               std::vector<std::string>& path) {
   // Parse a Uniswap-encoded path and return a vector of addresses representing
   // each hop involved in the swap.
@@ -239,27 +241,30 @@ bool UniswapEncodedPathDecode(const std::string& encodedPath,
   // │          │          │          │ ... │
   // │ 20 bytes │ 3 bytes  │ 20 bytes │     │
   // └──────────┴──────────┴──────────┴─────┘
-  std::string data = encodedPath.substr(2);
+  base::StringPiece data(encoded_path);
+
+  // Remove leading 0x prefix.
+  data.remove_prefix(2);
 
   // Parse first hop address.
-  if (data.length() < 40)
+  if (data.size() < 40)
     return false;
-  path.push_back("0x" + data.substr(0, 40));
+  path.push_back(base::StrCat({"0x", data.substr(0, 40)}));
   data = data.substr(40);
 
   while (true) {
-    if (data.length() == 0)
+    if (data.size() == 0)
       break;
 
     // Parse the pool fee, and ignore.
-    if (data.length() < 6)
+    if (data.size() < 6)
       return false;
     data = data.substr(6);
 
     // Parse next hop.
     if (data.length() < 40)
       return false;
-    path.push_back("0x" + data.substr(0, 40));
+    path.push_back(base::StrCat({"0x", data.substr(0, 40)}));
     data = data.substr(40);
   }
 
