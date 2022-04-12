@@ -175,17 +175,6 @@ public class BraveVpnPlansActivity extends BraveVpnParentActivity {
         invalidateOptionsMenu();
     }
 
-    // @Override
-    // public void showProgress() {
-    //     BraveVpnUtils.showProgressDialog(
-    //             BraveVpnPlansActivity.this, getResources().getString(R.string.vpn_connect_text));
-    // }
-
-    // @Override
-    // public void hideProgress() {
-    //     BraveVpnUtils.dismissProgressDialog();
-    // }
-
     @Override
     public void updateProfileView() {}
 }
