@@ -47,7 +47,7 @@ namespace {
 // The parsed address value is prefixed by "0x".
 bool GetAddressFromData(const std::string& input,
                         size_t offset,
-                        std::string& arg) {
+                        std::string& arg) {  // NOLINT(runtime/references)
   arg = "0x" + input.substr(offset + 24, 40);
   return true;
 }
@@ -58,7 +58,9 @@ bool GetAddressFromData(const std::string& input,
 // Using this function to extract an integer outside the range of size_t is
 // considered an error. Ideal candidates are calldata tail references, length
 // of dynamic types, etc.
-bool GetSizeFromData(const std::string& input, size_t offset, size_t& arg) {
+bool GetSizeFromData(const std::string& input,
+                     size_t offset,
+                     size_t& arg) {  // NOLINT(runtime/references)
   std::string padded_arg = "0x" + input.substr(offset, 64);
   uint256_t arg_uint;
   if (!brave_wallet::HexValueToUint256(padded_arg, &arg_uint))
@@ -80,7 +82,7 @@ bool GetSizeFromData(const std::string& input, size_t offset, size_t& arg) {
 // The parsed uint256 value is serialized as a hex string prefixed by "0x".
 bool GetUint256HexFromData(const std::string& input,
                            size_t offset,
-                           std::string& arg) {
+                           std::string& arg) {  // NOLINT(runtime/references)
   std::string padded_arg = "0x" + input.substr(offset, 64);
   uint256_t arg_uint;
   if (!brave_wallet::HexValueToUint256(padded_arg, &arg_uint))
@@ -96,7 +98,7 @@ bool GetUint256HexFromData(const std::string& input,
 // The parsed bool value is serialized as "true" or "false" strings.
 bool GetBoolFromData(const std::string& input,
                      size_t offset,
-                     std::string& arg) {
+                     std::string& arg) {  // NOLINT(runtime/references)
   std::string padded_arg = "0x" + input.substr(offset, 64);
   uint256_t arg_uint;
   if (!brave_wallet::HexValueToUint256(padded_arg, &arg_uint))
@@ -120,7 +122,7 @@ bool GetBoolFromData(const std::string& input,
 // The parsed bytearray is serialized as a hex string prefixed by "0x".
 bool GetBytesHexFromData(const std::string& input,
                          size_t offset,
-                         std::string& arg) {
+                         std::string& arg) {  // NOLINT(runtime/references)
   size_t pointer;
   if (!GetSizeFromData(input, offset, pointer))
     return false;
@@ -141,7 +143,7 @@ bool GetBytesHexFromData(const std::string& input,
 // The parsed data is joined together into a hex string prefixed by "0x".
 bool GetAddressArrayFromData(const std::string& input,
                              size_t offset,
-                             std::string& arg) {
+                             std::string& arg) {  // NOLINT(runtime/references)
   size_t pointer;
   if (!GetSizeFromData(input, offset, pointer))
     return false;
@@ -225,22 +227,23 @@ bool ABIDecodeInternal(const std::vector<std::string>& types,
 
 }  // namespace
 
+// UniswapEncodedPathDecode parses a Uniswap-encoded path and return a vector
+// of addresses representing each hop involved in the swap.
+//
+// Single-hop swap: Token1 → Token2
+// Multi-hop swap: Token1 → Token2 → WETH → Token3
+//
+// Each encoded hop contains a 3-byte pool fee, which is associated with the
+// address that follows. It is excluded from the result of this function.
+//
+// ┌──────────┬──────────┬──────────┬─────┐
+// │ address  │ pool fee │ address  │     │
+// │          │          │          │ ... │
+// │ 20 bytes │ 3 bytes  │ 20 bytes │     │
+// └──────────┴──────────┴──────────┴─────┘
 bool UniswapEncodedPathDecode(const std::string& encoded_path,
+                              // NOLINTNEXTLINE(runtime/references)
                               std::vector<std::string>& path) {
-  // Parse a Uniswap-encoded path and return a vector of addresses representing
-  // each hop involved in the swap.
-  //
-  // Single-hop swap: Token1 → Token2
-  // Multi-hop swap: Token1 → Token2 → WETH → Token3
-  //
-  // Each encoded hop contains a 3-byte pool fee, which is associated with the
-  // address that follows. It is excluded from the result of this function.
-  //
-  // ┌──────────┬──────────┬──────────┬─────┐
-  // │ address  │ pool fee │ address  │     │
-  // │          │          │          │ ... │
-  // │ 20 bytes │ 3 bytes  │ 20 bytes │     │
-  // └──────────┴──────────┴──────────┴─────┘
   base::StringPiece data(encoded_path);
 
   // Remove leading 0x prefix.
