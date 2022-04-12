@@ -728,7 +728,6 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
                                   onSetImportError={onSetImportAccountError}
                                   onAddCustomAsset={onAddCustomAsset}
                                   onUpdateVisibleAssets={onUpdateVisibleAssets}
-                                  transactionSpotPrices={[]}
                                   userVisibleTokensInfo={[]}
                                   onShowVisibleAssetsModal={onShowVisibleAssetsModal}
                                   showVisibleAssetsModal={showVisibleAssetsModal}

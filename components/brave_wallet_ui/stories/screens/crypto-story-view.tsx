@@ -51,7 +51,6 @@ export interface Props {
   userVisibleTokensInfo: BraveWallet.BlockchainToken[]
   fullAssetList: BraveWallet.BlockchainToken[]
   privateKey: string
-  transactionSpotPrices: BraveWallet.AssetPrice[]
   hasImportError: boolean
   isFilecoinEnabled: boolean
   isSolanaEnabled: boolean
@@ -85,7 +84,6 @@ const CryptoStoryView = (props: Props) => {
     defaultCurrencies,
     hasImportError,
     userVisibleTokensInfo,
-    transactionSpotPrices,
     privateKey,
     selectedNetwork,
     fullAssetList,
@@ -304,7 +302,6 @@ const CryptoStoryView = (props: Props) => {
           fullAssetList={fullAssetList}
           userVisibleTokensInfo={userVisibleTokensInfo}
           isFetchingPortfolioPriceHistory={isFetchingPortfolioPriceHistory}
-          transactionSpotPrices={transactionSpotPrices}
           onRetryTransaction={onClickRetryTransaction}
           onSpeedupTransaction={onClickSpeedupTransaction}
           onCancelTransaction={onClickCancelTransaction}
@@ -332,7 +329,6 @@ const CryptoStoryView = (props: Props) => {
           privateKey={privateKey}
           transactions={transactions}
           selectedNetwork={selectedNetwork}
-          transactionSpotPrices={transactionSpotPrices}
           userVisibleTokensInfo={userVisibleTokensInfo}
           selectedAccount={selectedAccount}
           onRetryTransaction={onClickRetryTransaction}

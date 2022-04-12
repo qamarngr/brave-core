@@ -36,7 +36,6 @@ import {
 } from '../../style'
 
 export interface Props {
-  transactionSpotPrices: BraveWallet.AssetPrice[]
   defaultCurrencies: DefaultCurrencies
   selectedAsset: BraveWallet.BlockchainToken | undefined
   accounts: WalletAccountType[]
@@ -58,7 +57,6 @@ export interface Props {
 const AccountsAndTransactionsList = (props: Props) => {
   const {
     selectedNetwork,
-    transactionSpotPrices,
     defaultCurrencies,
     selectedAsset,
     accounts,
@@ -109,7 +107,6 @@ const AccountsAndTransactionsList = (props: Props) => {
           <SubDivider />
           {accountsList.map((account) =>
             <PortfolioAccountItem
-              spotPrices={transactionSpotPrices}
               defaultCurrencies={defaultCurrencies}
               key={account.address}
               assetTicker={selectedAsset.symbol}
@@ -140,7 +137,6 @@ const AccountsAndTransactionsList = (props: Props) => {
                   accounts={accounts}
                   transaction={transaction}
                   account={findAccount(transaction.fromAddress)}
-                  transactionSpotPrices={transactionSpotPrices}
                   visibleTokens={userVisibleTokensInfo}
                   displayAccountName={true}
                   onSelectAccount={onSelectAccount}

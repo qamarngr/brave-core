@@ -88,7 +88,6 @@ export interface Props {
   fullAssetList: BraveWallet.BlockchainToken[]
   userVisibleTokensInfo: BraveWallet.BlockchainToken[]
   isFetchingPortfolioPriceHistory: boolean
-  transactionSpotPrices: BraveWallet.AssetPrice[]
   onRetryTransaction: (transaction: BraveWallet.TransactionInfo) => void
   onSpeedupTransaction: (transaction: BraveWallet.TransactionInfo) => void
   onCancelTransaction: (transaction: BraveWallet.TransactionInfo) => void
@@ -126,7 +125,6 @@ const Portfolio = (props: Props) => {
     userAssetList,
     isLoading,
     isFetchingPortfolioPriceHistory,
-    transactionSpotPrices,
     onRetryTransaction,
     onSpeedupTransaction,
     onCancelTransaction,
@@ -145,7 +143,7 @@ const Portfolio = (props: Props) => {
     }
     return getTokensNetwork(networkList, selectedAsset)
   }, [selectedNetwork, selectedAsset, networkList])
-  const parseTransaction = useTransactionParser(selectedAssetsNetwork, accounts, transactionSpotPrices, userVisibleTokensInfo)
+  const parseTransaction = useTransactionParser()
 
   const onSetFilteredAssetList = (filteredList: UserAssetInfoType[]) => {
     setfilteredAssetList(filteredList)
@@ -246,7 +244,7 @@ const Portfolio = (props: Props) => {
       .formatAsAsset(6, selectedAsset?.symbol ?? '') + ')'
     : ''
 
-  const { computeFiatAmount } = usePricing(transactionSpotPrices)
+  const { computeFiatAmount } = usePricing()
   const fullAssetFiatBalance = fullAssetBalances?.assetBalance
     ? computeFiatAmount(
       fullAssetBalances.assetBalance,
@@ -363,7 +361,6 @@ const Portfolio = (props: Props) => {
         selectedAsset={selectedAsset}
         selectedAssetTransactions={selectedAssetTransactions}
         selectedNetwork={selectedAssetsNetwork ?? selectedNetwork}
-        transactionSpotPrices={transactionSpotPrices}
         userVisibleTokensInfo={userVisibleTokensInfo}
         onClickAddAccount={onClickAddAccount}
         onSelectAccount={onSelectAccount}
@@ -379,7 +376,6 @@ const Portfolio = (props: Props) => {
           defaultCurrencies={defaultCurrencies}
           userAssetList={userAssetList}
           filteredAssetList={filteredAssetList}
-          tokenPrices={transactionSpotPrices}
           networks={networkList}
           onSetFilteredAssetList={onSetFilteredAssetList}
           onSelectAsset={selectAsset}

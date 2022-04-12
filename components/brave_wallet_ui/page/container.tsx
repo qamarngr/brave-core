@@ -85,7 +85,6 @@ function Container (props: Props) {
     portfolioPriceHistory,
     selectedPortfolioTimeline,
     isFetchingPortfolioPriceHistory,
-    transactionSpotPrices,
     addUserAssetError,
     defaultWallet,
     isMetaMaskInstalled,
@@ -133,7 +132,7 @@ function Container (props: Props) {
     onUpdateVisibleAssets
   } = useAssetManagement()
 
-  const { computeFiatAmount } = usePricing(transactionSpotPrices)
+  const { computeFiatAmount } = usePricing()
   const getAccountBalance = useBalance(networkList)
 
   const onToggleShowRestore = React.useCallback(() => {
@@ -591,7 +590,6 @@ function Container (props: Props) {
                 onSetImportError={onSetImportAccountError}
                 hasImportError={importAccountError}
                 onAddHardwareAccounts={onAddHardwareAccounts}
-                transactionSpotPrices={transactionSpotPrices}
                 userVisibleTokensInfo={userVisibleTokensInfo}
                 getBalance={getBalance}
                 onAddCustomAsset={onAddCustomAsset}

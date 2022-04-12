@@ -51,7 +51,6 @@ export interface Props {
   defaultCurrencies: DefaultCurrencies
   addUserAssetError: boolean
   hasImportError: boolean
-  transactionSpotPrices: BraveWallet.AssetPrice[]
   privateKey: string
   fullAssetList: BraveWallet.BlockchainToken[]
   userVisibleTokensInfo: BraveWallet.BlockchainToken[]
@@ -117,7 +116,6 @@ const CryptoView = (props: Props) => {
     addUserAssetError,
     hasImportError,
     userVisibleTokensInfo,
-    transactionSpotPrices,
     privateKey,
     selectedNetwork,
     fullAssetList,
@@ -324,7 +322,6 @@ const CryptoView = (props: Props) => {
           fullAssetList={fullAssetList}
           userVisibleTokensInfo={userVisibleTokensInfo}
           isFetchingPortfolioPriceHistory={isFetchingPortfolioPriceHistory}
-          transactionSpotPrices={transactionSpotPrices}
           addUserAssetError={addUserAssetError}
           showVisibleAssetsModal={showVisibleAssetsModal}
           onShowVisibleAssetsModal={onShowVisibleAssetsModal}
@@ -353,7 +350,6 @@ const CryptoView = (props: Props) => {
           privateKey={privateKey}
           transactions={transactions}
           selectedNetwork={selectedNetwork}
-          transactionSpotPrices={transactionSpotPrices}
           userVisibleTokensInfo={userVisibleTokensInfo}
           onRetryTransaction={onRetryTransaction}
           onSpeedupTransaction={onSpeedupTransaction}

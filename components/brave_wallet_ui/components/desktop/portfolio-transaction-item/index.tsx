@@ -19,7 +19,7 @@ import { copyToClipboard } from '../../../utils/copy-to-clipboard'
 import { getNetworkFromTXDataUnion } from '../../../utils/network-utils'
 
 // Hooks
-import { useExplorer, useTransactionParser } from '../../../common/hooks'
+import { useExplorer, useParsedTransactionInfo } from '../../../common/hooks'
 import { SwapExchangeProxy } from '../../../common/hooks/address-labels'
 
 // Styled Components
@@ -56,7 +56,6 @@ export interface Props {
   account: WalletAccountType | undefined
   accounts: WalletAccountType[]
   visibleTokens: BraveWallet.BlockchainToken[]
-  transactionSpotPrices: BraveWallet.AssetPrice[]
   displayAccountName: boolean
   defaultCurrencies: DefaultCurrencies
   onSelectAccount: (account: WalletAccountType) => void
@@ -72,7 +71,6 @@ const PortfolioTransactionItem = (props: Props) => {
     account,
     selectedNetwork,
     visibleTokens,
-    transactionSpotPrices,
     displayAccountName,
     accounts,
     defaultCurrencies,
@@ -92,11 +90,7 @@ const PortfolioTransactionItem = (props: Props) => {
     return getNetworkFromTXDataUnion(transaction.txDataUnion, defaultNetworks, selectedNetwork)
   }, [defaultNetworks, transaction, selectedNetwork])
 
-  const parseTransaction = useTransactionParser(transactionsNetwork, accounts, transactionSpotPrices, visibleTokens)
-  const transactionDetails = React.useMemo(
-    () => parseTransaction(transaction),
-    [transaction]
-  )
+  const transactionDetails = useParsedTransactionInfo(transaction)
 
   const fromOrb = React.useMemo(() => {
     return EthereumBlockies.create({ seed: transactionDetails.sender.toLowerCase(), size: 8, scale: 16 }).toDataURL()
