@@ -41,31 +41,31 @@ bool GetTransactionInfoFromData(const std::string& data,
 
   std::string selector = base::ToLowerASCII(data.substr(0, 10));
   std::string calldata = data.substr(10);
-  if (selector == "0xa9059cbb") {
+  if (selector == brave_wallet::kERC20TransferSelector) {
     *tx_type = mojom::TransactionType::ERC20Transfer;
     if (!brave_wallet::ABIDecode({"address", "uint256"}, calldata, tx_params,
                                  tx_args)) {
       return false;
     }
-  } else if (selector == "0x095ea7b3") {
+  } else if (selector == brave_wallet::kERC20ApproveSelector) {
     *tx_type = mojom::TransactionType::ERC20Approve;
     if (!brave_wallet::ABIDecode({"address", "uint256"}, calldata, tx_params,
                                  tx_args)) {
       return false;
     }
-  } else if (selector == "0x23b872dd") {
+  } else if (selector == brave_wallet::kERC721TransferFromSelector) {
     *tx_type = mojom::TransactionType::ERC721TransferFrom;
     if (!brave_wallet::ABIDecode({"address", "address", "uint256"}, calldata,
                                  tx_params, tx_args)) {
       return false;
     }
-  } else if (selector == "0x42842e0e") {
+  } else if (selector == brave_wallet::kERC721SafeTransferFromSelector) {
     *tx_type = mojom::TransactionType::ERC721SafeTransferFrom;
     if (!brave_wallet::ABIDecode({"address", "address", "uint256"}, calldata,
                                  tx_params, tx_args)) {
       return false;
     }
-  } else if (selector == "0x3598d8ab") {
+  } else if (selector == brave_wallet::kSellEthForTokenToUniswapV3Selector) {
     *tx_type = mojom::TransactionType::ETHSwap;
 
     // Function:
@@ -97,7 +97,8 @@ bool GetTransactionInfoFromData(const std::string& data,
     *tx_args = {fill_path,
                 "",  // maker asset is ETH, amount is txn value
                 tx_args->at(1)};
-  } else if (selector == "0x803ba26d" || selector == "0x6af479b2") {
+  } else if (selector == brave_wallet::kSellTokenForEthToUniswapV3Selector ||
+             selector == brave_wallet::kSellTokenForTokenToUniswapV3Selector) {
     *tx_type = mojom::TransactionType::ETHSwap;
 
     // Function: 0x803ba26d
@@ -138,7 +139,7 @@ bool GetTransactionInfoFromData(const std::string& data,
         "uint256"   // taker amount
     };
     *tx_args = {fill_path, tx_args->at(1), tx_args->at(2)};
-  } else if (selector == "0xd9627aa4") {
+  } else if (selector == brave_wallet::kSellToUniswapSelector) {
     *tx_type = mojom::TransactionType::ETHSwap;
 
     // Function:
@@ -162,7 +163,7 @@ bool GetTransactionInfoFromData(const std::string& data,
     };
     *tx_args = {tx_args->at(0), tx_args->at(1), tx_args->at(2)};
 
-  } else if (selector == "0x415565b0") {
+  } else if (selector == brave_wallet::kTransformERC20Selector) {
     *tx_type = mojom::TransactionType::ETHSwap;
 
     // Function:
