@@ -8,6 +8,9 @@
 
 #define ScheduleUIUpdate virtual ScheduleUIUpdate
 #define ShouldDisplayFavicon virtual ShouldDisplayFavicon
+#define TryToCloseWindow virtual TryToCloseWindow
+#define ShouldCloseWindow virtual ShouldCloseWindow
+#define ResetTryToCloseWindow virtual ResetTryToCloseWindow
 #define BRAVE_BROWSER_H              \
  private:                            \
   friend class BookmarkPrefsService; \
@@ -18,5 +21,8 @@
 #undef BRAVE_BROWSER_H
 #undef ScheduleUIUpdate
 #undef ShouldDisplayFavicon
+#undef TryToCloseWindow
+#undef ShouldCloseWindow
+#undef ResetTryToCloseWindow
 
 #endif  // BRAVE_CHROMIUM_SRC_CHROME_BROWSER_UI_BROWSER_H_

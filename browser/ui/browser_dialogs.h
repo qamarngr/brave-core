@@ -6,6 +6,8 @@
 #ifndef BRAVE_BROWSER_UI_BROWSER_DIALOGS_H_
 #define BRAVE_BROWSER_UI_BROWSER_DIALOGS_H_
 
+#include "base/callback_forward.h"
+
 class Browser;
 
 namespace content {
@@ -15,9 +17,13 @@ class WebContents;
 namespace brave {
 
 void ShowDefaultBrowserDialog(Browser* browser);
+
 // Tab restore dialog will be launched after ask dialog is closed.
 void ShowCrashReportPermissionAskDialog(Browser* browser);
 void ShowWebDiscoveryDialog(Browser* browser, content::WebContents* contents);
+void ShowWindowClosingConfirmDialog(
+    Browser* browser,
+    base::OnceCallback<void(bool)> response_callback);
 
 }  // namespace brave
 

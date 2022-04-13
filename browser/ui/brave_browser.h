@@ -8,6 +8,7 @@
 
 #include <memory>
 
+#include "base/memory/weak_ptr.h"
 #include "brave/components/sidebar/buildflags/buildflags.h"
 #include "chrome/browser/ui/browser.h"
 
@@ -39,6 +40,11 @@ class BraveBrowser : public Browser {
       TabStripModel* tab_strip_model,
       const TabStripModelChange& change,
       const TabStripSelectionChange& selection) override;
+  bool ShouldCloseWindow() override;
+  bool TryToCloseWindow(
+      bool skip_beforeunload,
+      const base::RepeatingCallback<void(bool)>& on_close_confirmed) override;
+  void ResetTryToCloseWindow() override;
 
 #if BUILDFLAG(ENABLE_SIDEBAR)
   sidebar::SidebarController* sidebar_controller() {
@@ -49,9 +55,17 @@ class BraveBrowser : public Browser {
   BraveBrowserWindow* brave_window();
 
  private:
+  bool ShouldShowWindowClosingConfirmDialog() const;
+  void OnShowWindowClosingConfirmDialog(bool allowed_to_close_window);
+
 #if BUILDFLAG(ENABLE_SIDEBAR)
   std::unique_ptr<sidebar::SidebarController> sidebar_controller_;
 #endif
+
+  bool show_window_closing_confirm_dialog_ = true;
+  bool allowed_to_close_window_ = true;
+
+  base::WeakPtrFactory<BraveBrowser> weak_factory_{this};
 };
 
 #endif  // BRAVE_BROWSER_UI_BRAVE_BROWSER_H_

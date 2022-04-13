@@ -4,8 +4,14 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "brave/browser/ui/brave_browser.h"
+#include "base/bind.h"
+#include "brave/browser/ui/browser_dialogs.h"
+#include "brave/common/pref_names.h"
+#include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/search/search.h"
+#include "chrome/browser/ui/browser_commands.h"
 #include "chrome/common/webui_url_constants.h"
+#include "components/prefs/pref_service.h"
 #include "content/public/common/url_constants.h"
 #include "url/gurl.h"
 
@@ -92,6 +98,51 @@ void BraveBrowser::OnTabStripModelChanged(
       selection.active_tab_changed())
     sidebar_controller_->sidebar()->UpdateSidebar();
 #endif
+}
+
+bool BraveBrowser::ShouldShowWindowClosingConfirmDialog() const {
+  if (!show_window_closing_confirm_dialog_)
+    return false;
+
+  PrefService* prefs = profile()->GetPrefs();
+  if (!prefs->GetBoolean(kEnableWindowClosingConfirm))
+    return false;
+
+  // Only launch confirm dialog while closing when browser has multiple tabs.
+  return tab_strip_model()->count() > 1;
+}
+
+void BraveBrowser::OnShowWindowClosingConfirmDialog(
+    bool allowed_to_close_window) {
+  allowed_to_close_window_ = allowed_to_close_window;
+}
+
+bool BraveBrowser::ShouldCloseWindow() {
+  if (ShouldShowWindowClosingConfirmDialog()) {
+    brave::ShowWindowClosingConfirmDialog(
+        this, base::BindOnce(&BraveBrowser::OnShowWindowClosingConfirmDialog,
+                             weak_factory_.GetWeakPtr()));
+    if (!allowed_to_close_window_)
+      return false;
+  }
+
+  return Browser::ShouldCloseWindow();
+}
+
+bool BraveBrowser::TryToCloseWindow(
+    bool skip_beforeunload,
+    const base::RepeatingCallback<void(bool)>& on_close_confirmed) {
+  // This method is called during application shutdown/restart.
+  // not by each window closing request.
+  // So, don't show closing confirm dialog in this situation.
+  // When it's cancelled during, it's cleared by ResetTryToCloseWindow().
+  show_window_closing_confirm_dialog_ = false;
+  return Browser::TryToCloseWindow(skip_beforeunload, on_close_confirmed);
+}
+
+void BraveBrowser::ResetTryToCloseWindow() {
+  show_window_closing_confirm_dialog_ = true;
+  Browser::ResetTryToCloseWindow();
 }
 
 BraveBrowserWindow* BraveBrowser::brave_window() {
