@@ -44,7 +44,6 @@ import { getTokensCoinType } from '../utils/network-utils'
 import {
   getBalance,
   getBlockchainTokenInfo,
-  isStrongPassword,
   onConnectHardwareWallet
 } from '../common/async/lib'
 
@@ -97,7 +96,6 @@ function Container (props: Props) {
 
   // Page Props
   const {
-    invalidMnemonic,
     mnemonic,
     selectedTimeline,
     selectedAsset,
@@ -108,10 +106,7 @@ function Container (props: Props) {
     isFetchingPriceHistory,
     privateKey,
     importAccountError,
-    importWalletError,
-    showAddModal,
-    isCryptoWalletsInitialized,
-    isMetaMaskInitialized
+    showAddModal
   } = props.page
 
   // const [view, setView] = React.useState<NavTypes>('crypto')
@@ -162,24 +157,9 @@ function Container (props: Props) {
     props.walletActions.selectAccount(account)
   }
 
-  const completeWalletSetup = (recoveryVerified: boolean) => {
-    if (recoveryVerified) {
-      props.walletPageActions.walletBackupComplete()
-    }
-    props.walletPageActions.walletSetupComplete()
-  }
-
   const onBackupWallet = () => {
     props.walletPageActions.walletBackupComplete()
     history.goBack()
-  }
-
-  const restoreWallet = (mnemonic: string, password: string, isLegacy: boolean) => {
-    props.walletPageActions.restoreWallet({ mnemonic, password, isLegacy })
-  }
-
-  const passwordProvided = (password: string) => {
-    props.walletPageActions.createWallet({ password })
   }
 
   const unlockWallet = () => {
@@ -207,14 +187,6 @@ function Container (props: Props) {
       props.walletActions.hasIncorrectPassword(false)
     }
   }
-
-  const restoreError = React.useMemo(() => {
-    if (invalidMnemonic) {
-      setTimeout(function () { props.walletPageActions.hasMnemonicError(false) }, 5000)
-      return true
-    }
-    return false
-  }, [invalidMnemonic])
 
   const recoveryPhrase = React.useMemo(() => {
     return (mnemonic || '').split(' ')
@@ -349,10 +321,6 @@ function Container (props: Props) {
     props.walletPageActions.setImportAccountError(hasError)
   }
 
-  const onSetImportWalletError = (hasError: boolean) => {
-    props.walletPageActions.setImportWalletError({ hasError })
-  }
-
   const onRemoveAccount = (address: string, hardware: boolean, coin: BraveWallet.CoinType) => {
     if (hardware) {
       props.walletPageActions.removeHardwareAccount({ address, coin })
@@ -376,14 +344,6 @@ function Container (props: Props) {
 
   const onDoneViewingPrivateKey = () => {
     props.walletPageActions.doneViewingPrivateKey()
-  }
-
-  const onImportCryptoWallets = (password: string, newPassword: string) => {
-    props.walletPageActions.importFromCryptoWallets({ password, newPassword })
-  }
-
-  const onImportMetaMask = (password: string, newPassword: string) => {
-    props.walletPageActions.importFromMetaMask({ password, newPassword })
   }
 
   const checkWalletsToImport = () => {
@@ -501,29 +461,12 @@ function Container (props: Props) {
           <Route path={WalletRoutes.Restore} exact={true}>
             {isWalletLocked &&
               <OnboardingWrapper>
-                <OnboardingRestore
-                  checkIsStrongPassword={isStrongPassword}
-                  onRestore={restoreWallet}
-                  toggleShowRestore={onToggleShowRestore}
-                  hasRestoreError={restoreError}
-                />
+                <OnboardingRestore />
               </OnboardingWrapper>
             }
           </Route>
           <Route path={WalletRoutes.Onboarding} exact={true}>
-            <Onboarding
-              checkIsStrongPassword={isStrongPassword}
-              recoveryPhrase={recoveryPhrase}
-              onPasswordProvided={passwordProvided}
-              onSubmit={completeWalletSetup}
-              onShowRestore={onToggleShowRestore}
-              isCryptoWalletsInitialized={isCryptoWalletsInitialized}
-              isMetaMaskInitialized={isMetaMaskInitialized}
-              importError={importWalletError}
-              onSetImportError={onSetImportWalletError}
-              onImportCryptoWallets={onImportCryptoWallets}
-              onImportMetaMask={onImportMetaMask}
-            />
+            <Onboarding />
           </Route>
           <Route path={WalletRoutes.Unlock} exact={true}>
             {isWalletLocked &&

@@ -15,8 +15,7 @@ import {
   UserAccountType,
   AccountTransactions,
   BuySendSwapTypes,
-  WalletAccountType,
-  ImportWalletError
+  WalletAccountType
 } from '../constants/types'
 import Onboarding from './screens/onboarding'
 import BackupWallet from './screens/backup-wallet'
@@ -33,7 +32,6 @@ import {
   HardwareWalletConnectOpts
 } from '../components/desktop/popup-modals/add-account-modal/hardware-wallet-connect/types'
 import { mockNetworks } from './mock-data/mock-networks'
-import { isStrongPassword } from '../utils/password-utils'
 import Amount from '../utils/amount'
 import { SweepstakesBanner } from '../components/desktop/sweepstakes-banner'
 import { Provider } from 'react-redux'
@@ -293,12 +291,11 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
   const [view] = React.useState<NavTypes>('crypto')
   const [isFilecoinEnabled] = React.useState<boolean>(true)
   const [isSolanaEnabled] = React.useState<boolean>(true)
-  const [needsOnboarding, setNeedsOnboarding] = React.useState<boolean>(onboarding)
+  const [needsOnboarding] = React.useState<boolean>(onboarding)
   const [walletLocked, setWalletLocked] = React.useState<boolean>(locked)
   const [needsBackup, setNeedsBackup] = React.useState<boolean>(true)
   const [showBackup, setShowBackup] = React.useState<boolean>(false)
   const [inputValue, setInputValue] = React.useState<string>('')
-  const [hasRestoreError, setHasRestoreError] = React.useState<boolean>(false)
   const [hasPasswordError, setHasPasswordError] = React.useState<boolean>(false)
   const [selectedTimeline, setSelectedTimeline] = React.useState<BraveWallet.AssetPriceTimeframe>(BraveWallet.AssetPriceTimeframe.OneDay)
   const [selectedAssetPriceHistory, setSelectedAssetPriceHistory] = React.useState<PriceDataObjectType[]>(PriceHistoryMockData.slice(15, 20))
@@ -309,7 +306,6 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
   const [buyAmount, setBuyAmount] = React.useState('')
   const [isRestoring, setIsRestoring] = React.useState<boolean>(false)
   const [importAccountError, setImportAccountError] = React.useState<boolean>(false)
-  const [importWalletError, setImportWalletError] = React.useState<ImportWalletError>({ hasError: false })
   const [selectedWidgetTab, setSelectedWidgetTab] = React.useState<BuySendSwapTypes>('buy')
   const [showVisibleAssetsModal, setShowVisibleAssetsModal] = React.useState<boolean>(false)
   const [foundTokenInfo, setFoundTokenInfo] = React.useState<BraveWallet.BlockchainToken | undefined>()
@@ -324,17 +320,8 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
   //   setView(path)
   // }
 
-  const completeWalletSetup = (recoveryVerified: boolean) => {
-    setNeedsOnboarding(false)
-    setNeedsBackup(recoveryVerified)
-  }
-
   const onWalletBackedUp = () => {
     setNeedsBackup(false)
-  }
-
-  const passwordProvided = (password: string) => {
-    console.log('Password provided')
   }
 
   const unlockWallet = () => {
@@ -364,14 +351,6 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
 
   const onHideBackup = () => {
     setShowBackup(false)
-  }
-
-  const onRestore = (phrase: string, password: string, isLegacy: boolean) => {
-    if (JSON.stringify(phrase.split(' ')) === JSON.stringify(mockRecoveryPhrase)) {
-      completeWalletSetup(true)
-    } else {
-      setHasRestoreError(true)
-    }
   }
 
   const selectedUSDAssetPrice = React.useMemo(() => {
@@ -577,12 +556,6 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
     })
   }
 
-  const onImportWallet = (password: string) => {
-    if (password !== 'password') {
-      setImportWalletError({ hasError: true })
-    }
-  }
-
   const onAddHardwareAccounts = (accounts: BraveWallet.HardwareWalletAccount[]) => {
     console.log(accounts)
   }
@@ -599,20 +572,12 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
     setImportAccountError(hasError)
   }
 
-  const onSetImportWalletError = (hasError: boolean) => {
-    setImportWalletError({ hasError })
-  }
-
   const onAddCustomAsset = () => {
     alert('Will Add a Custom Token')
   }
 
   const onUpdateVisibleAssets = () => {
     alert('Will Update Visible Assets List')
-  }
-
-  const checkIsStrongPassword = async (value: string) => {
-    return isStrongPassword.test(value)
   }
 
   const defaultCurrencies = {
@@ -640,29 +605,12 @@ export const _DesktopWalletConcept = (args: { onboarding: boolean, locked: boole
           /> */}
           <WalletSubViewLayout>
             {isRestoring ? (
-              <OnboardingRestore
-                checkIsStrongPassword={checkIsStrongPassword}
-                hasRestoreError={hasRestoreError}
-                onRestore={onRestore}
-                toggleShowRestore={onToggleRestore}
-              />
+              <OnboardingRestore />
             ) : (
               <>
                 {needsOnboarding
                   ? (
-                    <Onboarding
-                      checkIsStrongPassword={checkIsStrongPassword}
-                      importError={importWalletError}
-                      recoveryPhrase={mockRecoveryPhrase}
-                      onSubmit={completeWalletSetup}
-                      onPasswordProvided={passwordProvided}
-                      onShowRestore={onToggleRestore}
-                      isCryptoWalletsInitialized={true}
-                      isMetaMaskInitialized={true}
-                      onImportMetaMask={onImportWallet}
-                      onImportCryptoWallets={onImportWallet}
-                      onSetImportError={onSetImportWalletError}
-                    />
+                    <Onboarding />
                   ) : (
                     <>
                       {view === 'crypto' ? (
