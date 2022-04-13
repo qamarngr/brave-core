@@ -7,15 +7,8 @@
 
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
-#include "chrome/browser/profiles/profile.h"
-#include "chrome/test/base/testing_browser_process.h"
-#include "chrome/test/base/testing_profile.h"
-#include "chrome/test/base/testing_profile_manager.h"
+#include "chrome/test/base/browser_with_test_window_test.h"
 #include "components/grit/brave_components_strings.h"
-#include "content/public/test/browser_task_environment.h"
-#include "content/public/test/test_browser_context.h"
-#include "content/public/test/test_renderer_host.h"
 #include "content/public/test/web_contents_tester.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
@@ -49,20 +42,23 @@ std::u16string GetHIDTitle(content::WebContents* content, const GURL& url) {
 
 namespace brave_wallet {
 
-class BraveWalletTabHelperUnitTest : public testing::Test {
+class BraveWalletTabHelperUnitTest : public BrowserWithTestWindowTest {
  public:
-  BraveWalletTabHelperUnitTest()
-      : profile_manager_(TestingBrowserProcess::GetGlobal()) {}
+  BraveWalletTabHelperUnitTest() {}
   ~BraveWalletTabHelperUnitTest() override = default;
 
   void SetUp() override {
-    ASSERT_TRUE(profile_manager_.SetUp());
-    profile_ = profile_manager_.CreateTestingProfile("TestProfile");
+    BrowserWithTestWindowTest::SetUp();
     web_contents_ =
-        content::WebContentsTester::CreateTestWebContents(profile_, nullptr);
+        content::WebContentsTester::CreateTestWebContents(profile(), nullptr);
     ASSERT_TRUE(web_contents_.get());
     brave_wallet::BraveWalletTabHelper::CreateForWebContents(
         web_contents_.get());
+  }
+
+  void TearDown() override {
+    web_contents_.reset();
+    BrowserWithTestWindowTest::TearDown();
   }
 
   brave_wallet::BraveWalletTabHelper* brave_wallet_tab_helper() {
@@ -73,12 +69,6 @@ class BraveWalletTabHelperUnitTest : public testing::Test {
   content::WebContents* web_contents() { return web_contents_.get(); }
 
  private:
-  content::BrowserTaskEnvironment task_environment_;
-  TestingProfileManager profile_manager_;
-  raw_ptr<TestingProfile> profile_ = nullptr;
-  // Needed to ensure we don't end up creating actual RenderViewHosts
-  // and RenderProcessHosts.
-  content::RenderViewHostTestEnabler render_view_host_test_enabler_;
   std::unique_ptr<content::WebContents> web_contents_;
 };
 

@@ -13,12 +13,14 @@
 WalletPanelHandler::WalletPanelHandler(
     mojo::PendingReceiver<brave_wallet::mojom::PanelHandler> receiver,
     ui::MojoBubbleWebUIController* webui_controller,
-    GetActiveWebContentsCallback get_active_web_contents,
+    content::WebContents* active_web_contents,
     PanelCloseOnDeactivationCallback close_on_deactivation)
     : receiver_(this, std::move(receiver)),
       webui_controller_(webui_controller),
-      get_active_web_contents_(std::move(get_active_web_contents)),
-      close_on_deactivation_(std::move(close_on_deactivation)) {}
+      active_web_contents_(active_web_contents),
+      close_on_deactivation_(std::move(close_on_deactivation)) {
+  DCHECK(active_web_contents_);
+}
 
 WalletPanelHandler::~WalletPanelHandler() {}
 
@@ -38,19 +40,12 @@ void WalletPanelHandler::CloseUI() {
 
 void WalletPanelHandler::ConnectToSite(
     const std::vector<std::string>& accounts) {
-  content::WebContents* contents = get_active_web_contents_.Run();
-  if (!contents)
-    return;
-
-  permissions::BraveWalletPermissionContext::AcceptOrCancel(accounts, contents);
+  permissions::BraveWalletPermissionContext::AcceptOrCancel(
+      accounts, active_web_contents_);
 }
 
 void WalletPanelHandler::CancelConnectToSite() {
-  content::WebContents* contents = get_active_web_contents_.Run();
-  if (!contents)
-    return;
-
-  permissions::BraveWalletPermissionContext::Cancel(contents);
+  permissions::BraveWalletPermissionContext::Cancel(active_web_contents_);
 }
 
 void WalletPanelHandler::SetCloseOnDeactivate(bool close) {
