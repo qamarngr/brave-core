@@ -48,6 +48,9 @@ namespace {
 bool GetAddressFromData(const std::string& input,
                         size_t offset,
                         std::string& arg) {  // NOLINT(runtime/references)
+  if ((input.length() - offset) < 64)
+    return false;
+
   arg = "0x" + input.substr(offset + 24, 40);
   return true;
 }
@@ -61,6 +64,9 @@ bool GetAddressFromData(const std::string& input,
 bool GetSizeFromData(const std::string& input,
                      size_t offset,
                      size_t& arg) {  // NOLINT(runtime/references)
+  if ((input.length() - offset) < 64)
+    return false;
+
   std::string padded_arg = "0x" + input.substr(offset, 64);
   uint256_t arg_uint;
   if (!brave_wallet::HexValueToUint256(padded_arg, &arg_uint))
@@ -83,6 +89,9 @@ bool GetSizeFromData(const std::string& input,
 bool GetUint256HexFromData(const std::string& input,
                            size_t offset,
                            std::string& arg) {  // NOLINT(runtime/references)
+  if ((input.length() - offset) < 64)
+    return false;
+
   std::string padded_arg = "0x" + input.substr(offset, 64);
   uint256_t arg_uint;
   if (!brave_wallet::HexValueToUint256(padded_arg, &arg_uint))
@@ -99,6 +108,9 @@ bool GetUint256HexFromData(const std::string& input,
 bool GetBoolFromData(const std::string& input,
                      size_t offset,
                      std::string& arg) {  // NOLINT(runtime/references)
+  if ((input.length() - offset) < 64)
+    return false;
+
   std::string padded_arg = "0x" + input.substr(offset, 64);
   uint256_t arg_uint;
   if (!brave_wallet::HexValueToUint256(padded_arg, &arg_uint))
@@ -131,6 +143,8 @@ bool GetBytesHexFromData(const std::string& input,
   if (!GetSizeFromData(input, pointer * 2, bytes_len))
     return false;
 
+  if (input.length() < pointer * 2 + 64 + bytes_len * 2)
+    return false;
   arg = "0x" + input.substr(pointer * 2 + 64, bytes_len * 2);
   return true;
 }
@@ -173,9 +187,6 @@ bool ABIDecodeInternal(const std::vector<std::string>& types,
   size_t calldata_tail = 0;
 
   for (const auto& type : types) {
-    if ((data.length() - offset) < 64)
-      return false;
-
     std::string value;
     if (type == "address") {
       if (!GetAddressFromData(data, offset, value))
@@ -195,6 +206,8 @@ bool ABIDecodeInternal(const std::vector<std::string>& types,
     } else {
       // For unknown/unsupported types, we only extract 32-bytes. In case of
       // dynamic types, this value is a calldata reference.
+      if ((data.length() - offset) < 64)
+        return false;
       value = data.substr(offset, 64);
     }
 
