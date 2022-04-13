@@ -246,12 +246,16 @@ bool UniswapEncodedPathDecode(const std::string& encoded_path,
                               std::vector<std::string>& path) {
   base::StringPiece data(encoded_path);
 
+  // The path should be long enough to encode a single-hop swap.
+  // 88 = len(0x) + len(address) + len(fee) + len(address)
+  //    =    2    +      40      +    6     +      40
+  if (data.size() < 88)
+    return false;
+
   // Remove leading 0x prefix.
   data.remove_prefix(2);
 
   // Parse first hop address.
-  if (data.size() < 40)
-    return false;
   path.push_back(base::StrCat({"0x", data.substr(0, 40)}));
   data = data.substr(40);
 

@@ -63,8 +63,14 @@ TEST(EthDataParser, UniswapEncodedPathDecodeValid) {
 }
 
 TEST(EthDataParser, UniswapEncodedPathDecodeInvalid) {
-  // Missing source hop.
+  // Empty string.
   std::vector<std::string> path;
+  ASSERT_FALSE(UniswapEncodedPathDecode("", path));
+
+  // Missing hops.
+  ASSERT_FALSE(UniswapEncodedPathDecode("0x", path));
+
+  // Missing source hop.
   ASSERT_FALSE(UniswapEncodedPathDecode(
       "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"  // WETH
       "002710",                                     // POOL FEE
@@ -80,6 +86,14 @@ TEST(EthDataParser, UniswapEncodedPathDecodeInvalid) {
   ASSERT_FALSE(UniswapEncodedPathDecode(
       "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"  // WETH
       "af5191b0de278c7286d6c7cc6ab6bb8a73ba2cd6",   // STG
+      path));
+
+  // Extraneous data
+  ASSERT_FALSE(UniswapEncodedPathDecode(
+      "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"  // WETH
+      "002710"                                      // POOL FEE (10000)
+      "af5191b0de278c7286d6c7cc6ab6bb8a73ba2cd6"    // STG
+      "deadbeef",                                   // Bogus data
       path));
 }
 
