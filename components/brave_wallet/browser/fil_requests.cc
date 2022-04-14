@@ -83,7 +83,7 @@ std::string getStateSearchMsgLimited(const std::string& cid, uint64_t period) {
       GetJsonRpc2Params("Filecoin.StateSearchMsgLimited", std::move(cid_value),
                         base::Value(std::to_string(period)));
   result = std::string(
-      json::convert_string_value_to_uint64("/params/1", result.c_str())
+      json::convert_string_value_to_uint64("/params/1", result.c_str(), false)
           .c_str());
   return result;
 }

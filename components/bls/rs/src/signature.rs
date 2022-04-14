@@ -1,4 +1,3 @@
-use std::convert::TryFrom;
 use std::convert::TryInto;
 use blake2b_simd::Params;
 use bls_signatures::Serialize;

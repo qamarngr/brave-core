@@ -202,9 +202,7 @@ void JsonRpcService::RequestInternal(
   }
   request_headers["Authorization"] =
       "Bearer "
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-      "eyJBbGxvdyI6WyJyZWFkIiwid3JpdGUiXX0.DCsusAwppYATgiIHLFP613lNTOHA22iLQ-"
-      "gLCruJMLQ";
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBbGxvdyI6WyJyZWFkIiwid3JpdGUiLCJzaWduIiwiYWRtaW4iXX0.OqMuzGRLfI97giJdk8HaxvWx0XKJdBP2XTm1addpgWo";
   std::unique_ptr<base::Environment> env(base::Environment::Create());
   std::string brave_key(BUILDFLAG(BRAVE_SERVICES_KEY));
   if (env->HasVar("BRAVE_SERVICES_KEY")) {

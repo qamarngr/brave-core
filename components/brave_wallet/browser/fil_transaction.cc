@@ -185,11 +185,11 @@ std::string FilTransaction::GetMessageToSign() const {
   std::string json;
   base::JSONWriter::Write(value, &json);
   std::string converted_json =
-      json::convert_string_value_to_int64("/GasLimit", json.c_str()).c_str();
+      json::convert_string_value_to_int64("/GasLimit", json.c_str(), false).c_str();
   if (converted_json.empty())
     return std::string();
   converted_json =
-      json::convert_string_value_to_uint64("/Sequence", converted_json.c_str())
+      json::convert_string_value_to_uint64("/Sequence", converted_json.c_str(), false)
           .c_str();
   return converted_json;
 }

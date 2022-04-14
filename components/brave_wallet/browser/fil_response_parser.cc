@@ -78,7 +78,7 @@ bool ParseFilStateSearchMsgLimited(const std::string& raw_json,
                                    const std::string& cid,
                                    int64_t* exit_code) {
   std::string converted_json(json::convert_int64_value_to_string(
-      "/result/Receipt/ExitCode", raw_json.c_str()));
+      "/result/Receipt/ExitCode", raw_json.c_str(), false));
   if (converted_json.empty())
     return false;
   base::Value result;
