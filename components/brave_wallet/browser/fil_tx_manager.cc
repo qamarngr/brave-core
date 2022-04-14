@@ -41,26 +41,9 @@ FilTxManager::FilTxManager(TxService* tx_service,
 
 FilTxManager::~FilTxManager() = default;
 
-void FilTxManager::GetEstimatedGas(const std::string& from,
-                                   std::unique_ptr<FilTransaction> tx,
-                                   AddUnapprovedTransactionCallback callback) {
-  const std::string gas_premium = tx->gas_premium();
-  const std::string gas_fee_cap = tx->gas_fee_cap();
-  auto gas_limit = tx->gas_limit();
-  uint64_t nonce = tx->nonce() ? tx->nonce().value() : 0;
-  const std::string value = tx->value();
-  const std::string max_fee = tx->max_fee();
-  auto to = tx->to().EncodeAsString();
-  json_rpc_service_->GetFilEstimateGas(
-      from, to, gas_premium, gas_fee_cap, gas_limit, nonce, max_fee, value,
-      base::BindOnce(&FilTxManager::ContinueAddUnapprovedTransaction,
-                     weak_factory_.GetWeakPtr(), from, std::move(tx),
-                     std::move(callback)));
-}
-
 void FilTxManager::ContinueAddUnapprovedTransaction(
     const std::string& from,
-    std::unique_ptr<FilTransaction> tx,
+    const std::string& tx_meta_id,
     AddUnapprovedTransactionCallback callback,
     const std::string& gas_premium,
     const std::string& gas_fee_cap,
@@ -71,22 +54,28 @@ void FilTxManager::ContinueAddUnapprovedTransaction(
     std::move(callback).Run(false, "", error_message);
     return;
   }
+  std::unique_ptr<FilTxMeta> meta =
+      GetFilTxStateManager()->GetFilTx(tx_meta_id);
+  if (!meta) {
+    DCHECK(false) << "Transaction should be found";
+    std::move(callback).Run(
+        false, "",
+        l10n_util::GetStringUTF8(IDS_BRAVE_WALLET_TRANSACTION_NOT_FOUND));
+    return;
+  }
 
-  tx->set_gas_premium(gas_premium);
-  tx->set_fee_cap(gas_fee_cap);
-  tx->set_gas_limit(gas_limit);
-  FilTxMeta meta(std::move(tx));
-  meta.set_id(TxMeta::GenerateMetaID());
-  meta.set_from(FilAddress::FromAddress(from).EncodeAsString());
-  meta.set_created_time(base::Time::Now());
-  meta.set_status(mojom::TransactionStatus::Unapproved);
-  tx_state_manager_->AddOrUpdateTx(meta);
-  std::move(callback).Run(true, meta.id(), "");
+  meta->tx()->set_gas_premium(gas_premium);
+  meta->tx()->set_fee_cap(gas_fee_cap);
+  meta->tx()->set_gas_limit(gas_limit);
+
+  tx_state_manager_->AddOrUpdateTx(*meta);
+  std::move(callback).Run(true, meta->id(), "");
 }
 
 void FilTxManager::AddUnapprovedTransaction(
     mojom::TxDataUnionPtr tx_data_union,
     const std::string& from,
+    const absl::optional<url::Origin>& origin,
     AddUnapprovedTransactionCallback callback) {
   DCHECK(tx_data_union->is_fil_tx_data());
   if (!FilAddress::IsValidAddress(from)) {
@@ -110,17 +99,28 @@ void FilTxManager::AddUnapprovedTransaction(
     return;
   }
 
-  auto tx_ptr = std::make_unique<FilTransaction>(*tx);
-  const std::string gas_fee_cap = tx->gas_fee_cap();
-  const std::string gas_premium = tx->gas_premium();
-  auto gas_limit = tx->gas_limit();
-  if (!gas_limit || gas_fee_cap.empty() || gas_premium.empty()) {
-    GetEstimatedGas(from, std::move(tx_ptr), std::move(callback));
-  } else {
-    ContinueAddUnapprovedTransaction(
-        from, std::move(tx_ptr), std::move(callback), gas_premium, gas_fee_cap,
-        gas_limit, mojom::FilecoinProviderError::kSuccess, "");
+  FilTxMeta meta(std::make_unique<FilTransaction>(std::move(*tx)));
+  meta.set_id(TxMeta::GenerateMetaID());
+  meta.set_from(FilAddress::FromAddress(from).EncodeAsString());
+  meta.set_created_time(base::Time::Now());
+  meta.set_status(mojom::TransactionStatus::Unapproved);
+  meta.set_origin(
+      origin.value_or(url::Origin::Create(GURL("chrome://wallet"))));
+  tx_state_manager_->AddOrUpdateTx(meta);
+  if (!meta.tx()->gas_limit() || meta.tx()->gas_fee_cap().empty() ||
+      meta.tx()->gas_premium().empty()) {
+    auto sequence =
+        meta.tx()->nonce().has_value() ? meta.tx()->nonce().value() : 0;
+    json_rpc_service_->GetFilEstimateGas(
+        from, meta.tx()->to().EncodeAsString(), meta.tx()->gas_premium(),
+        meta.tx()->gas_fee_cap(), meta.tx()->gas_limit(), sequence,
+        meta.tx()->max_fee(), meta.tx()->value(),
+        base::BindOnce(&FilTxManager::ContinueAddUnapprovedTransaction,
+                       weak_factory_.GetWeakPtr(), from, meta.id(),
+                       std::move(callback)));
+    return;
   }
+  std::move(callback).Run(true, meta.id(), "");
 }
 
 void FilTxManager::ApproveTransaction(const std::string& tx_meta_id,

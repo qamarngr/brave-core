@@ -56,9 +56,6 @@ class FilTxManager : public TxManager {
 
   void Reset() override;
 
-  void GetEstimatedGas(const std::string& from,
-                       std::unique_ptr<FilTransaction> tx,
-                       AddUnapprovedTransactionCallback callback);
   std::unique_ptr<FilTxMeta> GetTxForTesting(const std::string& tx_meta_id);
 
  private:
@@ -70,7 +67,7 @@ class FilTxManager : public TxManager {
                       uint256_t nonce);
   void ContinueAddUnapprovedTransaction(
       const std::string& from,
-      std::unique_ptr<FilTransaction> tx,
+      const std::string& tx_meta_id,
       AddUnapprovedTransactionCallback callback,
       const std::string& gas_premium,
       const std::string& gas_fee_cap,

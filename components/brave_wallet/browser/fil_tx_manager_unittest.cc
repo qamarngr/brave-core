@@ -88,6 +88,10 @@ class FilTxManagerUnitTest : public testing::Test {
 
   PrefService* prefs() { return &prefs_; }
 
+  url::Origin GetOrigin() const {
+    return url::Origin::Create(GURL("https://brave.com"));
+  }
+
   void AddUnapprovedTransaction(mojom::FilTxDataPtr tx_data,
                                 const std::string& from,
                                 std::string* meta_id) {
@@ -95,7 +99,7 @@ class FilTxManagerUnitTest : public testing::Test {
 
     base::RunLoop run_loop;
     fil_tx_manager()->AddUnapprovedTransaction(
-        std::move(tx_data_union), from,
+        std::move(tx_data_union), from, GetOrigin(),
         base::BindLambdaForTesting([&](bool success, const std::string& id,
                                        const std::string& err_message) {
           ASSERT_TRUE(success);
