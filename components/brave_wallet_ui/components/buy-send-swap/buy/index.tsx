@@ -75,19 +75,6 @@ function Buy (props: Props) {
     })
     setBuyOptions(supportingBuyOptions)
   }, [selectedAsset])
-  // React.useEffect(() => {
-  //   if (isAvailableOnRamp && isAvailableOnWyre) {
-  //     setBuyOptions(BuyOptions)
-  //   }
-  //
-  //   if (isAvailableOnRamp && !isAvailableOnWyre) {
-  //     setBuyOptions(BuyOptions.filter(option => option.id !== BraveWallet.OnRampProvider.kWyre))
-  //   }
-  //
-  //   if (!isAvailableOnRamp && isAvailableOnWyre) {
-  //     setBuyOptions(BuyOptions.filter(option => option.id !== BraveWallet.OnRampProvider.kRamp))
-  //   }
-  // }, [isAvailableOnWyre, isAvailableOnRamp])
 
   React.useEffect(() => {
     if (buyOptions.length > 0) {
