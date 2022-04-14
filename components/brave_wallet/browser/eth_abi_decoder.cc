@@ -36,6 +36,18 @@
 namespace brave_wallet {
 
 namespace {
+// GetArgFromData extracts a 32-byte wide hex string from the calldata at the
+// specified offset. The parsed value is NOT prefixed by "0x".
+bool GetArgFromData(const std::string& input,
+                    size_t offset,
+                    std::string& arg) {  // NOLINT(runtime/references)
+  if ((input.length() - offset) < 64)
+    return false;
+
+  arg = input.substr(offset, 64);
+  return true;
+}
+
 // GetAddressFromData extracts an Ethereum address from the calldata at the
 // specified index. The address type is static and 32-bytes wide, but we
 // only consider the last 20 bytes, discarding the leading 12 bytes of
@@ -55,6 +67,36 @@ bool GetAddressFromData(const std::string& input,
   return true;
 }
 
+// GetUint256FromData extracts a 32-byte wide uint256 value from the
+// calldata at the specified offset.
+bool GetUint256FromData(const std::string& input,
+                        size_t offset,
+                        uint256_t& arg) {  // NOLINT(runtime/references)
+  std::string value;
+  if (!GetArgFromData(input, offset, value))
+    return false;
+
+  if (!brave_wallet::HexValueToUint256("0x" + value, &arg))
+    return false;
+  return true;
+}
+
+// GetUint256FromData extracts a 32-byte wide uint256 hex value from the
+// calldata at the specified offset.
+//
+// The parsed uint256 value is serialized as a compact hex string (without)
+// leading 0s, and prefixed by "0x".
+bool GetUint256HexFromData(const std::string& input,
+                           size_t offset,
+                           std::string& arg) {  // NOLINT(runtime/references)
+  uint256_t arg_uint256;
+  if (!GetUint256FromData(input, offset, arg_uint256))
+    return false;
+
+  arg = brave_wallet::Uint256ValueToHex(arg_uint256);
+  return true;
+}
+
 // GetSizeFromData extracts a 32-byte wide size_t value from the calldata
 // at the specified offset.
 //
@@ -64,40 +106,17 @@ bool GetAddressFromData(const std::string& input,
 bool GetSizeFromData(const std::string& input,
                      size_t offset,
                      size_t& arg) {  // NOLINT(runtime/references)
-  if ((input.length() - offset) < 64)
+  uint256_t value;
+  if (!GetUint256FromData(input, offset, value))
     return false;
 
-  std::string padded_arg = "0x" + input.substr(offset, 64);
-  uint256_t arg_uint;
-  if (!brave_wallet::HexValueToUint256(padded_arg, &arg_uint))
-    return false;
-
-  // Since we use arg_uint as an array index, we need to cast the type to
+  // Since we use value as an array index, we need to cast the type to
   // something that can be used as an index, viz. size_t. To prevent runtime
   // errors, we make sure the value is within safe limits of size_t.
-  if (arg_uint > std::numeric_limits<size_t>::max())
+  if (value > std::numeric_limits<size_t>::max())
     return false;
 
-  arg = static_cast<size_t>(arg_uint);
-  return true;
-}
-
-// GetUint256HexFromData extracts a 32-byte wide uint256 value from the
-// calldata at the specified offset.
-//
-// The parsed uint256 value is serialized as a hex string prefixed by "0x".
-bool GetUint256HexFromData(const std::string& input,
-                           size_t offset,
-                           std::string& arg) {  // NOLINT(runtime/references)
-  if ((input.length() - offset) < 64)
-    return false;
-
-  std::string padded_arg = "0x" + input.substr(offset, 64);
-  uint256_t arg_uint;
-  if (!brave_wallet::HexValueToUint256(padded_arg, &arg_uint))
-    return false;
-
-  arg = brave_wallet::Uint256ValueToHex(arg_uint);
+  arg = static_cast<size_t>(value);
   return true;
 }
 
@@ -108,17 +127,13 @@ bool GetUint256HexFromData(const std::string& input,
 bool GetBoolFromData(const std::string& input,
                      size_t offset,
                      std::string& arg) {  // NOLINT(runtime/references)
-  if ((input.length() - offset) < 64)
+  uint256_t value;
+  if (!GetUint256FromData(input, offset, value))
     return false;
 
-  std::string padded_arg = "0x" + input.substr(offset, 64);
-  uint256_t arg_uint;
-  if (!brave_wallet::HexValueToUint256(padded_arg, &arg_uint))
-    return false;
-
-  if (arg_uint == 0)
+  if (value == 0)
     arg = "false";
-  else if (arg_uint == 1)
+  else if (value == 1)
     arg = "true";
   else
     return false;
@@ -206,9 +221,8 @@ bool ABIDecodeInternal(const std::vector<std::string>& types,
     } else {
       // For unknown/unsupported types, we only extract 32-bytes. In case of
       // dynamic types, this value is a calldata reference.
-      if ((data.length() - offset) < 64)
+      if (!GetArgFromData(data, offset, value))
         return false;
-      value = data.substr(offset, 64);
     }
 
     // On encountering a dynamic type, we extract the reference to the start
