@@ -83,4 +83,16 @@ absl::optional<std::string> ConvertUint64ToString(const std::string& path,
   return converted_json;
 }
 
+absl::optional<std::string> ConvertInt64ToString(const std::string& path,
+                                                 const std::string& json) {
+  if (path.empty() || json.empty())
+    return absl::nullopt;
+
+  std::string converted_json(
+      json::convert_int64_value_to_string(path, json, true));
+  if (converted_json.empty())
+    return absl::nullopt;
+  return converted_json;
+}
+
 }  // namespace brave_wallet
