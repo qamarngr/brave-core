@@ -90,8 +90,8 @@ def AddBravePartsForSigning(parts, config):
     )
 
     full_hardened_runtime_options = (
-        CodeSignOptions.HARDENED_RUNTIME + CodeSignOptions.RESTRICT +
-        CodeSignOptions.LIBRARY_VALIDATION + CodeSignOptions.KILL)
+        CodeSignOptions.HARDENED_RUNTIME | CodeSignOptions.RESTRICT
+        | CodeSignOptions.LIBRARY_VALIDATION | CodeSignOptions.KILL)
 
     # Add Sparkle
     if not development:
