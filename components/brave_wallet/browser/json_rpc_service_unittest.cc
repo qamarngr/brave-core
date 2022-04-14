@@ -3,6 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <stdint.h>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -62,6 +63,32 @@ void GetErrorCodeMessage(base::Value formed_response,
   if (message) {
     *error_message = message->GetString();
   }
+}
+
+std::string GetGasFilEstimateResponse(int64_t value) {
+  std::string response =
+      R"({
+          "id": 1,
+          "jsonrpc": "2.0",
+          "result": {
+              "CID": {
+                "/": "bafy2bzacebefvj6623fkmfwazpvg7qxgomhicefeb6tunc7wbvd2ee4uppfkw"
+              },
+              "From": "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq",
+              "GasFeeCap": "101520",
+              "GasLimit": {gas_limit},
+              "GasPremium": "100466",
+              "Method": 0,
+              "Nonce": 1,
+              "Params": "",
+              "To": "t1tquwkjo6qvweah2g2yikewr7y5dyjds42pnrn3a",
+              "Value": "1000000000000000000",
+              "Version": 0
+          }
+      })";
+  base::ReplaceSubstringsAfterOffset(&response, 0, "{gas_limit}",
+                                     std::to_string(value));
+  return response;
 }
 
 void UpdateCustomNetworks(PrefService* prefs,
@@ -646,7 +673,6 @@ class JsonRpcServiceUnitTest : public testing::Test {
     run_loop.Run();
   }
 
-<<<<<<< HEAD
   void TestGetSolanaBlockHeight(uint64_t expected_block_height,
                                 mojom::SolanaProviderError expected_error,
                                 const std::string& expected_error_message) {
@@ -660,7 +686,8 @@ class JsonRpcServiceUnitTest : public testing::Test {
           run_loop.Quit();
         }));
     run_loop.Run();
-=======
+  }
+
   void GetFilEstimateGas(const std::string& from,
                          const std::string& to,
                          const std::string& value,
@@ -685,7 +712,6 @@ class JsonRpcServiceUnitTest : public testing::Test {
               loop.Quit();
             }));
     loop.Run();
->>>>>>> f7bc8fe024 (Implement Filecoin.GasEstimateMessageGas RPC)
   }
 
  protected:
@@ -2810,32 +2836,22 @@ TEST_F(JsonRpcServiceUnitTest, GetSolanaBlockHeight) {
 
 TEST_F(JsonRpcServiceUnitTest, GetFilEstimateGas) {
   SetNetwork(mojom::kLocalhostChainId, mojom::CoinType::FIL);
-  std::string response =
-      R"({
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-              "CID": {
-                "/": "bafy2bzacebefvj6623fkmfwazpvg7qxgomhicefeb6tunc7wbvd2ee4uppfkw"
-              },
-              "From": "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq",
-              "GasFeeCap": "101520",
-              "GasLimit": 2187060,
-              "GasPremium": "100466",
-              "Method": 0,
-              "Nonce": 1,
-              "Params": "",
-              "To": "t1tquwkjo6qvweah2g2yikewr7y5dyjds42pnrn3a",
-              "Value": "1000000000000000000",
-              "Version": 0
-          }
-      })";
   SetInterceptor(GetNetwork(mojom::kLocalhostChainId, mojom::CoinType::FIL),
-                 "Filecoin.GasEstimateMessageGas", "", response);
+                 "Filecoin.GasEstimateMessageGas", "",
+                 GetGasFilEstimateResponse(INT64_MAX));
 
   GetFilEstimateGas("t1tquwkjo6qvweah2g2yikewr7y5dyjds42pnrn3a",
                     "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq",
-                    "1000000000000000000", "100466", "101520", 2187060,
+                    "1000000000000000000", "100466", "101520", INT64_MAX,
+                    mojom::FilecoinProviderError::kSuccess);
+
+  SetInterceptor(GetNetwork(mojom::kLocalhostChainId, mojom::CoinType::FIL),
+                 "Filecoin.GasEstimateMessageGas", "",
+                 GetGasFilEstimateResponse(INT64_MIN));
+
+  GetFilEstimateGas("t1tquwkjo6qvweah2g2yikewr7y5dyjds42pnrn3a",
+                    "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq",
+                    "1000000000000000000", "100466", "101520", INT64_MIN,
                     mojom::FilecoinProviderError::kSuccess);
 
   GetFilEstimateGas("", "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq",
@@ -2850,7 +2866,7 @@ TEST_F(JsonRpcServiceUnitTest, GetFilEstimateGas) {
   GetFilEstimateGas("t1tquwkjo6qvweah2g2yikewr7y5dyjds42pnrn3a",
                     "t1h5tg3bhp5r56uzgjae2373znti6ygq4agkx4hzq",
                     "1000000000000000000", "", "", 0,
-                    mojom::FilecoinProviderError::kParsingError);
+                    mojom::FilecoinProviderError::kInternalError);
 }
 
 }  // namespace brave_wallet
