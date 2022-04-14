@@ -33,6 +33,7 @@ brave_browser_brave_ads_deps = [
   "//brave/common",
   "//brave/components/brave_adaptive_captcha/buildflags",
   "//brave/components/brave_ads/browser",
+  "//brave/components/brave_ads/browser/search_result_ad",
   "//brave/components/brave_ads/common",
   "//brave/components/brave_ads/common:mojom",
   "//brave/components/brave_federated/public/interfaces",

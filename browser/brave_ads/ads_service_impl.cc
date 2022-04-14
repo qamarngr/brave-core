@@ -52,6 +52,7 @@
 #include "brave/components/brave_ads/browser/ads_p2a.h"
 #include "brave/components/brave_ads/browser/ads_storage_cleanup.h"
 #include "brave/components/brave_ads/browser/frequency_capping_helper.h"
+#include "brave/components/brave_ads/browser/search_result_ad/search_result_ad_handler.h"
 #include "brave/components/brave_ads/common/features.h"
 #include "brave/components/brave_ads/common/pref_names.h"
 #include "brave/components/brave_ads/common/switches.h"
@@ -243,6 +244,7 @@ AdsServiceImpl::AdsServiceImpl(
       display_service_(NotificationDisplayService::GetForProfile(profile_)),
       rewards_service_(
           brave_rewards::RewardsServiceFactory::GetForProfile(profile_)),
+      search_result_ad_handler_(std::make_unique<SearchResultAdHandler>(this)),
       ad_notification_timing_data_store_(ad_notification_timing_data_store),
       bat_ads_client_receiver_(new bat_ads::AdsClientMojoBridge(this)) {
   DCHECK(profile_);
@@ -1162,6 +1164,11 @@ void AdsServiceImpl::OnInlineContentAdEvent(
   }
 
   bat_ads_->OnInlineContentAdEvent(uuid, creative_instance_id, event_type);
+}
+
+void AdsServiceImpl::MaybeRetrieveSearchResultAd(
+    content::RenderFrameHost* render_frame_host) {
+  search_result_ad_handler_->MaybeRetrieveSearchResultAd(render_frame_host);
 }
 
 void AdsServiceImpl::TriggerSearchResultAdEvent(

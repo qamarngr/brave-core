@@ -136,7 +136,12 @@ void AdsTabHelper::DocumentOnLoadCompletedInPrimaryMainFrame() {
     return;
   }
 
-  RunIsolatedJavaScript(web_contents()->GetMainFrame());
+  content::RenderFrameHost* render_frame_host = web_contents()->GetMainFrame();
+  RunIsolatedJavaScript(render_frame_host);
+
+  if (ads_service_) {
+    ads_service_->MaybeRetrieveSearchResultAd(render_frame_host);
+  }
 }
 
 void AdsTabHelper::DidFinishLoad(content::RenderFrameHost* render_frame_host,

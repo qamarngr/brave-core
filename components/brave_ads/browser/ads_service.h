@@ -29,6 +29,10 @@ class DictionaryValue;
 class ListValue;
 }
 
+namespace content {
+class RenderFrameHost;
+}
+
 namespace user_prefs {
 class PrefRegistrySyncable;
 }
@@ -145,6 +149,9 @@ class AdsService : public KeyedService {
       const std::string& uuid,
       const std::string& creative_instance_id,
       const ads::mojom::InlineContentAdEventType event_type) = 0;
+
+  virtual void MaybeRetrieveSearchResultAd(
+      content::RenderFrameHost* render_frame_host) = 0;
 
   virtual void TriggerSearchResultAdEvent(
       ads::mojom::SearchResultAdPtr ad_mojom,

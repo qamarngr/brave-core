@@ -74,6 +74,7 @@ class SimpleURLLoader;
 namespace brave_ads {
 
 class AdsTooltipsDelegate;
+class SearchResultAdHandler;
 
 class AdsServiceImpl : public AdsService,
                        public ads::AdsClient,
@@ -174,6 +175,9 @@ class AdsServiceImpl : public AdsService,
       const std::string& uuid,
       const std::string& creative_instance_id,
       const ads::mojom::InlineContentAdEventType event_type) override;
+
+  void MaybeRetrieveSearchResultAd(
+      content::RenderFrameHost* render_frame_host) override;
 
   void TriggerSearchResultAdEvent(
       ads::mojom::SearchResultAdPtr ad_mojom,
@@ -530,6 +534,8 @@ class AdsServiceImpl : public AdsService,
   raw_ptr<NotificationDisplayService> display_service_ = nullptr;  // NOT OWNED
   raw_ptr<brave_rewards::RewardsService> rewards_service_{
       nullptr};  // NOT OWNED
+
+  std::unique_ptr<SearchResultAdHandler> search_result_ad_handler_;
 
   raw_ptr<brave_federated::AsyncDataStore<
       brave_federated::AdNotificationTimingDataStore,
