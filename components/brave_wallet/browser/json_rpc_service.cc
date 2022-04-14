@@ -1454,6 +1454,8 @@ void JsonRpcService::GetERC721Metadata(const std::string& contract_address,
                                        const std::string& token_id,
                                        const std::string& chain_id,
                                        GetERC721MetadataCallback callback) {
+
+  LOG(ERROR) << "GetERC721Metadata: chain_id=" << chain_id << "\n";
   auto network_url = GetNetworkURL(prefs_, chain_id, mojom::CoinType::ETH);
   if (!network_url.is_valid()) {
     std::move(callback).Run(
@@ -1485,6 +1487,7 @@ void JsonRpcService::GetERC721Metadata(const std::string& contract_address,
     return;
   }
 
+  LOG(ERROR)<< "GetERC721Metadata: contract_address "<< contract_address << "function_signature " << function_signature << "network_url" << network_url;
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnGetSupportsInterfaceERC721Metadata,
                      weak_ptr_factory_.GetWeakPtr(), contract_address,
@@ -1507,6 +1510,7 @@ void JsonRpcService::OnGetSupportsInterfaceERC721Metadata(
     return;
   }
 
+  LOG(ERROR)<< "OnGetSupportsInterfaceERC721Metadata, is_supported " << is_supported;
   if (!is_supported) {
     std::move(callback).Run(
         "", mojom::ProviderError::kMethodNotSupported,
@@ -1536,6 +1540,8 @@ void JsonRpcService::OnGetERC721TokenUri(
     return;
   }
 
+  LOG(ERROR) << "OnGetERC721TokenUri (0) \n";
+
   // Parse response JSON that wraps the result
   GURL url;
   if (!eth::ParseERC721TokenUri(body, &url)) {
@@ -1546,11 +1552,14 @@ void JsonRpcService::OnGetERC721TokenUri(
     return;
   }
 
+  LOG(ERROR) << "OnGetERC721TokenUri (1), able to ParseERC721TokenUri, url is " << url << "\n";
+
   // Obtain JSON from the URL depending on the scheme.
   // IPFS, HTTPS, and data URIs are supported.
   // IPFS and HTTPS URIs require an additional request to fetch the metadata.
   std::string metadata_json;
   std::string scheme = url.scheme();
+  LOG(ERROR) << "OnGetERC721TokenUri, scheme is  " << scheme;
   if (scheme != url::kDataScheme && scheme != url::kHttpsScheme &&
       scheme != ipfs::kIPFSScheme) {
     std::move(callback).Run(
@@ -1575,12 +1584,14 @@ void JsonRpcService::OnGetERC721TokenUri(
     return;
   }
 
+  LOG(ERROR) << "BeforeIPFS fetch \n";
   if (scheme == ipfs::kIPFSScheme &&
       !ipfs::ToConfiguredGatewayURL(&url, prefs_)) {
     std::move(callback).Run("", mojom::ProviderError::kParsingError,
                             l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR));
     return;
   }
+  LOG(ERROR) << "AfterPFS fetch \n";
 
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnGetERC721MetadataPayload,
@@ -1593,7 +1604,6 @@ void JsonRpcService::OnSanitizeERC721Metadata(
     GetERC721MetadataCallback callback,
     data_decoder::JsonSanitizer::Result result) {
   if (result.error) {
-    VLOG(1) << "Data URI JSON validation error:" << *result.error;
     std::move(callback).Run("", mojom::ProviderError::kParsingError,
                             l10n_util::GetStringUTF8(IDS_WALLET_PARSING_ERROR));
     return;
@@ -1640,6 +1650,7 @@ void JsonRpcService::GetSupportsInterface(
     return;
   }
 
+  LOG(ERROR) << "GetSupportsInterface: interface_id: " << interface_id << "\n";
   std::string data;
   if (!erc165::SupportsInterface(interface_id, &data)) {
     std::move(callback).Run(
@@ -1647,6 +1658,8 @@ void JsonRpcService::GetSupportsInterface(
         l10n_util::GetStringUTF8(IDS_WALLET_INVALID_PARAMETERS));
   }
 
+  LOG(ERROR) << "GetSupportsInterface: data is \n" << data;
+ 
   auto internal_callback =
       base::BindOnce(&JsonRpcService::OnGetSupportsInterface,
                      weak_ptr_factory_.GetWeakPtr(), std::move(callback));
@@ -1668,14 +1681,18 @@ void JsonRpcService::OnGetSupportsInterface(
     return;
   }
 
+  LOG(ERROR) << "OnGetSupportsInterface (0) \n";
   bool is_supported = false;
   if (!ParseBoolResult(body, &is_supported)) {
+    LOG(ERROR) << "OnGetSupportsInterface (1.5): response is" << body << " \n";
     mojom::ProviderError error;
     std::string error_message;
     ParseErrorResult<mojom::ProviderError>(body, &error, &error_message);
     std::move(callback).Run(false, error, error_message);
     return;
   }
+
+  LOG(ERROR) << "OnGetSupportsInterface (1), is supported " << is_supported << "\n";
 
   std::move(callback).Run(is_supported, mojom::ProviderError::kSuccess, "");
 }
