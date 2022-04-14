@@ -23,6 +23,7 @@ import {
 } from './style'
 import BuyWithButton from '../../buy-with-button'
 import { BuyOptions } from '../../../options/buy-with-options'
+import { isSelectedAssetInAssetOptions } from '../../../utils/asset-utils'
 
 export interface Props {
   selectedAsset: BraveWallet.BlockchainToken
@@ -35,8 +36,8 @@ export interface Props {
   onChangeBuyView: (view: BuySendSwapViewTypes, option?: ToOrFromType) => void
   selectedBuyOption: BraveWallet.OnRampProvider
   onSelectBuyOption: (optionId: BraveWallet.OnRampProvider) => void
-  isAvailableOnWyre: boolean
-  isAvailableOnRamp: boolean
+  wyreAssetOptions: BraveWallet.BlockchainToken[]
+  rampAssetOptions: BraveWallet.BlockchainToken[]
 }
 
 function Buy (props: Props) {
@@ -51,8 +52,8 @@ function Buy (props: Props) {
     onChangeBuyView,
     selectedBuyOption,
     onSelectBuyOption,
-    isAvailableOnWyre,
-    isAvailableOnRamp
+    wyreAssetOptions,
+    rampAssetOptions
   } = props
   const [buyOptions, setBuyOptions] = React.useState<BuyOption[]>(BuyOptions)
 
@@ -61,18 +62,32 @@ function Buy (props: Props) {
   }
 
   React.useEffect(() => {
-    if (isAvailableOnRamp && isAvailableOnWyre) {
-      setBuyOptions(BuyOptions)
-    }
+    const supportingBuyOptions = BuyOptions.filter(buyOption => {
+      if (buyOption.id === BraveWallet.OnRampProvider.kWyre) {
+        return isSelectedAssetInAssetOptions(selectedAsset, wyreAssetOptions)
+      }
 
-    if (isAvailableOnRamp && !isAvailableOnWyre) {
-      setBuyOptions(BuyOptions.filter(option => option.id !== BraveWallet.OnRampProvider.kWyre))
-    }
+      if (buyOption.id === BraveWallet.OnRampProvider.kRamp) {
+        return isSelectedAssetInAssetOptions(selectedAsset, rampAssetOptions)
+      }
 
-    if (!isAvailableOnRamp && isAvailableOnWyre) {
-      setBuyOptions(BuyOptions.filter(option => option.id !== BraveWallet.OnRampProvider.kRamp))
-    }
-  }, [isAvailableOnWyre, isAvailableOnRamp])
+      return false
+    })
+    setBuyOptions(supportingBuyOptions)
+  }, [selectedAsset])
+  // React.useEffect(() => {
+  //   if (isAvailableOnRamp && isAvailableOnWyre) {
+  //     setBuyOptions(BuyOptions)
+  //   }
+  //
+  //   if (isAvailableOnRamp && !isAvailableOnWyre) {
+  //     setBuyOptions(BuyOptions.filter(option => option.id !== BraveWallet.OnRampProvider.kWyre))
+  //   }
+  //
+  //   if (!isAvailableOnRamp && isAvailableOnWyre) {
+  //     setBuyOptions(BuyOptions.filter(option => option.id !== BraveWallet.OnRampProvider.kRamp))
+  //   }
+  // }, [isAvailableOnWyre, isAvailableOnRamp])
 
   React.useEffect(() => {
     if (buyOptions.length > 0) {

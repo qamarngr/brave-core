@@ -12,7 +12,7 @@ import {
   Buy
 } from '..'
 
-import { getUniqueAssets, isSelectedAssetInAssetOptions } from '../../../utils/asset-utils'
+import { getUniqueAssets } from '../../../utils/asset-utils'
 
 export interface Props {
   networkList: BraveWallet.NetworkInfo[]
@@ -85,14 +85,6 @@ function BuyTab (props: Props) {
     return getUniqueAssets(assetOptions)
   }, [assetOptions])
 
-  const isAvailableOnWyre = React.useMemo(() => {
-    return isSelectedAssetInAssetOptions(selectedAsset, wyreAssetOptions)
-  }, [selectedAsset])
-
-  const isAvailableOnRamp = React.useMemo(() => {
-    return isSelectedAssetInAssetOptions(selectedAsset, rampAssetOptions)
-  }, [selectedAsset])
-
   return (
     <>
       {buyView === 'buy' &&
@@ -111,10 +103,10 @@ function BuyTab (props: Props) {
             onInputChange={onInputChange}
             onSubmit={onSubmitBuy}
             networkList={networkList}
-            isAvailableOnWyre={isAvailableOnWyre}
-            isAvailableOnRamp={isAvailableOnRamp}
             selectedBuyOption={selectedBuyOption}
             onSelectBuyOption={onSelectBuyOption}
+            rampAssetOptions={rampAssetOptions}
+            wyreAssetOptions={wyreAssetOptions}
           />
         </>
       }

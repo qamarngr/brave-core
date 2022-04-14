@@ -6,7 +6,6 @@ import ETHIconUrl from './eth-asset-icon.svg'
 import ZRXIconUrl from './zrx-asset-icon.svg'
 import SOLIconUrl from './sol-asset-icon.svg'
 import FILECOINIconUrl from './filecoin-asset-icon.svg'
-import FEVRIconUrl from './fevr-asset-icon.svg'
 
 export {
   BATIconUrl,
@@ -16,6 +15,5 @@ export {
   ETHIconUrl,
   ZRXIconUrl,
   SOLIconUrl,
-  FILECOINIconUrl,
-  FEVRIconUrl
+  FILECOINIconUrl
 }

@@ -66,7 +66,7 @@ import { GetBuyOrFaucetUrl } from '../utils/buy-asset-url'
 import { getNetworkInfo } from '../utils/network-utils'
 import { isHardwareAccount } from '../utils/address-utils'
 import { useAssets, useSwap, useSend } from '../common/hooks'
-import { getUniqueAssets, isSelectedAssetInAssetOptions } from '../utils/asset-utils'
+import { getUniqueAssets } from '../utils/asset-utils'
 
 type Props = {
   panel: PanelState
@@ -486,14 +486,6 @@ function Container (props: Props) {
     return getUniqueAssets(buyAssetOptions)
   }, [buyAssetOptions])
 
-  const isAvailableOnWyre = React.useMemo(() => {
-    return isSelectedAssetInAssetOptions(selectedBuyAsset, wyreAssetOptions)
-  }, [selectedBuyAsset])
-
-  const isAvailableOnRamp = React.useMemo(() => {
-    return isSelectedAssetInAssetOptions(selectedBuyAsset, rampAssetOptions)
-  }, [selectedBuyAsset])
-
   const isConnectedToSite = React.useMemo((): boolean => {
     if (activeOrigin.originSpec === WalletOrigin) {
       return true
@@ -806,10 +798,10 @@ function Container (props: Props) {
                 buyAmount={buyAmount}
                 selectedNetwork={getNetworkInfo(selectedNetwork.chainId, networkList)}
                 networkList={networkList}
-                isAvailableOnRamp={isAvailableOnRamp}
-                isAvailableOnWyre={isAvailableOnWyre}
                 selectedBuyOption={selectedBuyOption}
                 onSelectBuyOption={setSelectedBuyOption}
+                rampAssetOptions={rampAssetOptions}
+                wyreAssetOptions={wyreAssetOptions}
               />
             </SendWrapper>
           </Panel>
