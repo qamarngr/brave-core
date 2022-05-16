@@ -27,6 +27,8 @@ import android.hardware.biometrics.BiometricManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
+import android.text.Html;
+import android.text.Spanned;
 import android.text.SpannableString;
 import android.text.style.ClickableSpan;
 import android.util.Pair;
@@ -1496,6 +1498,28 @@ public class Utils {
             return fingerprintManager != null && fingerprintManager.isHardwareDetected()
                     && fingerprintManager.hasEnrolledFingerprints();
         }
+    }
+
+    public static Spanned geteTLDFromGRUL(GURL url) {
+        StringBuilder builder = new StringBuilder(url.getSpec());
+        int index = builder.indexOf(url.getHost());
+        if (index > 0) {
+            builder.insert(index, "<b>");
+            builder.insert(builder.length(), "</b>");
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            return Html.fromHtml(builder.toString(), Html.FROM_HTML_MODE_LEGACY);
+        } else {
+            return Html.fromHtml(builder.toString());
+        }
+    }
+
+    public static GURL getCurentTabUrl() {
+        ChromeTabbedActivity activity = BraveActivity.getChromeTabbedActivity();
+        if (activity != null) {
+            return activity.getActivityTab().getUrl().getOrigin();
+        }
+        return GURL.emptyGURL();
     }
 
     @NonNull
