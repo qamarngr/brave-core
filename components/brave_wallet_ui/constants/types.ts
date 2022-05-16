@@ -400,7 +400,6 @@ export interface SendFilTransactionParams extends BaseTransactionParams {
   gasFeeCap?: string
   gasLimit?: string
   maxFee?: string
-  cid?: string
 }
 
 export interface SendSolTransactionParams extends BaseTransactionParams {
@@ -625,8 +624,8 @@ export interface TransactionProviderErrorRegistry {
 }
 
 export const SupportedCoinTypes = [
-  BraveWallet.CoinType.ETH,
   BraveWallet.CoinType.SOL,
+  BraveWallet.CoinType.ETH,
   BraveWallet.CoinType.FIL
 ]
 

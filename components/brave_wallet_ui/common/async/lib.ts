@@ -700,6 +700,7 @@ export async function sendFilTransaction (payload: SendFilTransactionParams) {
     gasLimit: payload.gasLimit || '',
     maxFee: payload.maxFee || '0',
     to: payload.to,
+    from: payload.from,
     value: payload.value
   }
   // @ts-expect-error google closure is ok with undefined for other fields but mojom runtime is not
